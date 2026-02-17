@@ -1,0 +1,88 @@
+# ─── Dependencies ─────────────────────────────────────────────────────────────
+
+node_modules/
+.pnp
+.pnp.js
+
+# ─── Build Output ─────────────────────────────────────────────────────────────
+
+.output/
+.wxt/
+dist/
+build/
+*.zip
+*.crx
+*.xpi
+
+# ─── Environment Variables ────────────────────────────────────────────────────
+
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# ─── Logs ─────────────────────────────────────────────────────────────────────
+
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ─── IDE / Editor ─────────────────────────────────────────────────────────────
+
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.sublime-project
+*.sublime-workspace
+
+# ─── TypeScript ───────────────────────────────────────────────────────────────
+
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# ─── Testing ──────────────────────────────────────────────────────────────────
+
+coverage/
+*.lcov
+.nyc_output/
+
+# ─── OS ───────────────────────────────────────────────────────────────────────
+
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ─── Temp Files ───────────────────────────────────────────────────────────────
+
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+*~
+
+# ─── Extension Specific ───────────────────────────────────────────────────────
+
+# Private keys
+*.pem
+*.key
+key.pem
+
+# Extension packages
+web-ext-artifacts/
+
+# Store submission assets
+screenshots/*.png
+!screenshots/example.png
+
+# Local config overrides
+wxt.config.local.ts

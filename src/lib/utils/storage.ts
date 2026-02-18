@@ -19,6 +19,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoSyncHistory: false,
   auth: {},
   defaultTracker: null,
+  confirmationMode: 'quick',
+  batchSyncPending: true,
+  showChapterBadge: true,
+  notifyDetectionFailure: true,
 };
 
 export async function getSettings(): Promise<AppSettings> {
@@ -61,6 +65,7 @@ export function slugify(title: string): string {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '') // strip leading/trailing hyphens
     .trim();
 }
 

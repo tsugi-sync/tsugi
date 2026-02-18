@@ -21,6 +21,12 @@ export default defineConfig({
       48: '/tsugi-icon-48.png',
       128: '/tsugi-icon-128.png',
     },
+    web_accessible_resources: [
+      {
+        resources: ['*.png', '*.svg'],
+        matches: ['<all_urls>'],
+      },
+    ],
     action: {
       default_icon: {
         16: '/tsugi-icon-16.png',
@@ -37,7 +43,7 @@ export default defineConfig({
       'https://shikimori.one/*',
       'https://api.bgm.tv/*',
       'https://bgm.tv/*',
-      // Piracy anime
+      // Community anime
       '*://*.zoro.to/*',
       '*://*.aniwatch.to/*',
       '*://*.aniwatchtv.to/*',
@@ -52,7 +58,7 @@ export default defineConfig({
       '*://*.netflix.com/*',
       '*://*.funimation.com/*',
       '*://*.hidive.com/*',
-      // Piracy manga
+      // Community manga
       '*://*.mangabat.com/*',
       '*://*.mangakakalot.com/*',
       '*://*.chapmanganato.to/*',

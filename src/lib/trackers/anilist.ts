@@ -105,8 +105,71 @@ export async function searchAniList(
     totalChapters: m.chapters,
     totalEpisodes: m.episodes,
     tracker: 'anilist' as const,
+    publishingStatus: m.status,
   }));
 }
+
+const LIST_QUERY = `
+  query ($userName: String, $type: MediaType) {
+    MediaListCollection(userName: $userName, type: $type) {
+      lists {
+        entries {
+          id
+          progress
+          status
+          media {
+            id
+            title { romaji english native }
+            coverImage { medium }
+            type
+            format
+            chapters
+            episodes
+            status
+            averageScore
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getAniListUserList(
+  userName: string,
+  type: 'ANIME' | 'MANGA',
+  token: string
+): Promise<TrackerEntry[]> {
+  const data = await gql<any>(LIST_QUERY, { userName, type }, token);
+  const allEntries: TrackerEntry[] = [];
+
+  (data.MediaListCollection.lists ?? []).forEach((list: any) => {
+    (list.entries ?? []).forEach((e: any) => {
+      allEntries.push({
+        id: e.media.id,
+        title: e.media.title.english ?? e.media.title.romaji,
+        coverImage: e.media.coverImage.medium,
+        type: mapAniListFormat(e.media.format),
+        status: statusMapInverted[e.status] ?? 'watching',
+        progress: e.progress,
+        score: e.media.averageScore ? e.media.averageScore / 10 : undefined,
+        totalChapters: e.media.chapters,
+        totalEpisodes: e.media.episodes,
+        tracker: 'anilist' as const,
+        publishingStatus: e.media.status,
+      });
+    });
+  });
+
+  return allEntries;
+}
+
+const statusMapInverted: Record<string, MediaStatus> = {
+  'CURRENT': 'watching',
+  'COMPLETED': 'completed',
+  'PAUSED': 'on_hold',
+  'DROPPED': 'dropped',
+  'PLANNING': 'plan_to_watch',
+};
 
 // ─── Progress Update ──────────────────────────────────────────────────────────
 

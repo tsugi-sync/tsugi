@@ -13,6 +13,8 @@ export type MediaStatus =
   | 'plan_to_watch'
   | 'plan_to_read';
 
+export type ConfirmationMode = 'ask' | 'quick' | 'auto';
+
 // ─── Source Platforms ─────────────────────────────────────────────────────────
 
 export type PlatformType =
@@ -21,7 +23,7 @@ export type PlatformType =
   | 'netflix'
   | 'funimation'
   | 'hidive'
-  // Piracy anime
+  // Community anime
   | 'zoro'
   | '9anime'
   | 'gogoanime'
@@ -30,11 +32,12 @@ export type PlatformType =
   | 'mangadex'
   | 'webtoon'
   | 'mangaplus'
-  // Piracy manga
+  // Community manga
   | 'mangabat'
   | 'mangakakalot'
   | 'tcbscans'
   | 'generic_manga'
+  | 'generic_anime'
   | 'unknown';
 
 // ─── Auth ─────────────────────────────────────────────────────────────────────
@@ -60,6 +63,7 @@ export interface TrackerEntry {
   totalChapters?: number;
   totalEpisodes?: number;
   tracker: TrackerType;
+  publishingStatus?: string;
 }
 
 // ─── Detected Media ───────────────────────────────────────────────────────────
@@ -99,6 +103,9 @@ export interface TrackedItem {
   migrationStatus: MigrationStatus;
   migratedFrom?: MigrationRecord;
   migratedTo?: MigrationRecord;
+  publishingStatus?: string;
+  pendingProgress?: number[]; // Chapters read but not synced
+  autoTrack?: boolean; // If true, ignore confirmation for this item
   createdAt: number;
   updatedAt: number;
 }
@@ -111,6 +118,11 @@ export interface AppSettings {
   autoSyncHistory: boolean;
   auth: Partial<Record<TrackerType, TrackerAuth>>;
   defaultTracker: TrackerType | null;
+  // New Community Sources Flow Settings
+  confirmationMode: ConfirmationMode;
+  batchSyncPending: boolean;
+  showChapterBadge: boolean;
+  notifyDetectionFailure: boolean;
 }
 
 // ─── Storage Keys ─────────────────────────────────────────────────────────────
@@ -121,6 +133,19 @@ export const STORAGE_KEYS = {
 } as const;
 
 // ─── Messages ─────────────────────────────────────────────────────────────────
+
+export interface AidokuSource {
+  id: string;
+  name: string;
+  baseURL: string;
+  languages: string[];
+  iconURL: string;
+}
+
+export interface AidokuSourceIndex {
+  sources: AidokuSource[];
+  lastUpdated: number;
+}
 
 export type Message =
   | { type: 'MEDIA_DETECTED'; payload: DetectedMedia }
@@ -133,7 +158,13 @@ export type Message =
   | { type: 'SAVE_SETTINGS'; payload: Partial<AppSettings> }
   | { type: 'GET_TRACKED_ITEMS' }
   | { type: 'INITIATE_AUTH'; payload: { tracker: TrackerType } }
-  | { type: 'LOGOUT'; payload: { tracker: TrackerType } };
+  | { type: 'LOGOUT'; payload: { tracker: TrackerType } }
+  | { type: 'GET_AIDOKU_SOURCES' }
+  | { type: 'SYNC_ALL_HISTORY' }
+  // Content Script UI Messages
+  | { type: 'SHOW_TOAST'; payload: { title: string; subtitle: string; duration?: number; type?: 'success' | 'warning' | 'error' | 'info' } }
+  | { type: 'SHOW_MODAL'; payload: { modalType: 'link' | 'migration' | 'jump' | 'fallback'; data: any } }
+  | { type: 'CONFIRM_TRACKING'; payload: { platformKey: string; confirmed: boolean; always?: boolean } };
 
 export interface MigratePlatformPayload {
   fromPlatformKey: string;

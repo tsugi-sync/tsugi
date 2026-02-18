@@ -1,11 +1,11 @@
-import type { Message, MessageResponse, TrackerType, MediaStatus, AppSettings, TrackedItem } from '@/lib/types';
-import { getSettings, saveSettings, getTrackedItem, saveTrackedItem, getAllTrackedItems, makePlatformKey } from '@/lib/utils/storage';
-import { searchMAL, updateMALProgress, getMALAuthUrl, exchangeMALCode, getMALUser, generateCodeVerifier, MAL_CLIENT_ID } from '@/lib/trackers/mal';
-import { searchAniList, updateAniListProgress, getAniListAuthUrl, parseAniListToken, getAniListUser } from '@/lib/trackers/anilist';
-import { searchShikimori, updateShikimoriProgress, getShikimoriAuthUrl, exchangeShikimoriCode, getShikimoriUser } from '@/lib/trackers/shikimori';
-import { searchBangumi, updateBangumiProgress, getBangumiAuthUrl, exchangeBangumiCode, getBangumiUser, refreshBangumiToken } from '@/lib/trackers/bangumi';
-import { migratePlatform, getActiveItems, getArchivedItems } from '@/lib/migrations/index';
+import { getActiveItems, getArchivedItems, migratePlatform } from '@/lib/migrations/index';
+import { getAniListUser, getAniListUserList, parseAniListToken, searchAniList, updateAniListProgress } from '@/lib/trackers/anilist';
+import { exchangeBangumiCode, getBangumiUser, searchBangumi, updateBangumiProgress } from '@/lib/trackers/bangumi';
+import { exchangeMALCode, getMALUser, getMALUserList, searchMAL, updateMALProgress } from '@/lib/trackers/mal';
+import { exchangeShikimoriCode, getShikimoriUser, searchShikimori, updateShikimoriProgress } from '@/lib/trackers/shikimori';
+import type { AidokuSource, AidokuSourceIndex, DetectedMedia, Message, MessageResponse, TrackedItem, TrackerEntry, TrackerType } from '@/lib/types';
 import { ensureValidToken } from '@/lib/utils/auth';
+import { getAllTrackedItems, getSettings, getTrackedItem, makePlatformKey, saveSettings, saveTrackedItem, storageSet } from '@/lib/utils/storage';
 
 // Store PKCE verifiers temporarily during auth flow
 const pkceVerifiers: Partial<Record<TrackerType, string>> = {};
@@ -14,6 +14,10 @@ const pkceVerifiers: Partial<Record<TrackerType, string>> = {};
 let sessionDiscoveries: Record<string, TrackedItem> = {};
 let currentlyViewingKey: string | null = null;
 
+const AIDOKU_SOURCES_URL = 'https://aidoku-community.github.io/sources/index.min.json';
+const AIDOKU_CACHE_KEY = 'aidoku_sources_cache';
+const AIDOKU_REFRESH_INTERVAL = 24 * 60 * 60 * 1000; // 24 hours
+
 export default defineBackground(() => {
   chrome.runtime.onMessage.addListener((message: Message, _sender, sendResponse) => {
     handleMessage(message)
@@ -21,6 +25,17 @@ export default defineBackground(() => {
       .catch((err) => sendResponse({ success: false, error: err.message }));
     return true;
   });
+
+  // Prune session discoveries older than 1 day every hour to keep memory lean
+  const SESSION_TTL = 24 * 60 * 60 * 1000; // 1 day
+  setInterval(() => {
+    const now = Date.now();
+    for (const key in sessionDiscoveries) {
+      if (now - (sessionDiscoveries[key].createdAt ?? 0) > SESSION_TTL) {
+        delete sessionDiscoveries[key];
+      }
+    }
+  }, 60 * 60 * 1000); // Run every hour
 });
 
 // ─── Message Router ───────────────────────────────────────────────────────────
@@ -31,9 +46,10 @@ async function handleMessage(message: Message): Promise<MessageResponse> {
     case 'GET_SETTINGS':
       return { success: true, data: await getSettings() };
 
-    case 'SAVE_SETTINGS':
+    case 'SAVE_SETTINGS': {
       await saveSettings(message.payload);
       return { success: true, data: null };
+    }
 
     case 'GET_TRACKED_ITEMS': {
       const active = await getActiveItems();
@@ -61,25 +77,47 @@ async function handleMessage(message: Message): Promise<MessageResponse> {
     case 'LOGOUT':
       return handleLogout(message.payload.tracker);
 
-    case 'SEARCH_TRACKER':
+    case 'SEARCH_TRACKER': {
+      const settings = await getSettings();
+      if (settings.activeTrackers.length === 0) return { success: false, error: 'Please connect a tracker in Settings first.' };
       return handleSearch(message.payload);
+    }
 
-    case 'MEDIA_DETECTED':
+    case 'MEDIA_DETECTED': {
+      const settings = await getSettings();
+      if (settings.activeTrackers.length === 0) return { success: true, data: null }; // Silent ignore
       return handleMediaDetected(message.payload);
+    }
 
-    case 'LINK_ENTRY':
+    case 'LINK_ENTRY': {
+      const settings = await getSettings();
+      if (settings.activeTrackers.length === 0) return { success: false, error: 'Connect a tracker first.' };
       return handleLinkEntry(message.payload);
+    }
 
     case 'UNLINK_ENTRY':
       return handleUnlinkEntry(message.payload);
 
-    case 'SYNC_PROGRESS':
+    case 'SYNC_PROGRESS': {
+      const settings = await getSettings();
+      if (settings.activeTrackers.length === 0) return { success: false, error: 'No active trackers' };
       return handleSyncProgress(message.payload.platformKey);
+    }
+
+    case 'SYNC_ALL_HISTORY':
+      await syncAllHistory();
+      return { success: true, data: null };
 
     case 'MIGRATE_PLATFORM': {
       const newItem = await migratePlatform(message.payload);
       return { success: true, data: newItem };
     }
+
+    case 'CONFIRM_TRACKING':
+      return handleConfirmTracking(message.payload);
+
+    case 'GET_AIDOKU_SOURCES':
+      return handleGetAidokuSources();
 
     default:
       return { success: false, error: 'Unknown message type' };
@@ -246,41 +284,143 @@ async function handleSearch({ tracker, query, mediaType }: {
 
 // ─── Media Detected ───────────────────────────────────────────────────────────
 
-async function handleMediaDetected(payload: any): Promise<MessageResponse> {
-  const { platform, title, progress, type, hostname } = payload;
+async function handleMediaDetected(payload: DetectedMedia, sender?: chrome.runtime.MessageSender): Promise<MessageResponse> {
+  const { platform, title, progress, type } = payload;
   const platformKey = makePlatformKey(platform, title);
   currentlyViewingKey = platformKey;
 
-  const existing = await getTrackedItem(platformKey);
-  if (existing) {
-    if (existing.migrationStatus === 'active' && existing.lastProgress < progress) {
-      existing.lastProgress = progress;
-      existing.updatedAt = Date.now();
-      await saveTrackedItem(existing);
+  const [settings, existing] = await Promise.all([getSettings(), getTrackedItem(platformKey)]);
+  const tabId = sender?.tab?.id;
 
-      const settings = await getSettings();
-      if (settings.updateAfterReading) {
+  if (existing) {
+    // 1. Existing tracked item
+    if (existing.migrationStatus === 'active' && existing.lastProgress < progress) {
+      const isUnlinked = Object.keys(existing.trackerIds).length === 0;
+
+      if (isUnlinked) {
+        // Not linked to any tracker yet — just update local progress so it's ready when they link
+        existing.lastProgress = progress;
+        existing.updatedAt = Date.now();
+        if (!existing.pendingProgress) existing.pendingProgress = [];
+        if (!existing.pendingProgress.includes(progress)) {
+          existing.pendingProgress.push(progress);
+        }
+        await saveTrackedItem(existing);
+      } else if (settings.confirmationMode === 'auto' || existing.autoTrack) {
+        // Auto-sync
+        existing.lastProgress = progress;
+        existing.updatedAt = Date.now();
+        await saveTrackedItem(existing);
         await syncToTrackers(platformKey, progress);
+        if (tabId) showToast(tabId, '✓ Auto-synced', `${title} Ch.${progress}`, 'success');
+      } else {
+        // Scenario 4: Update pendingProgress if not auto-syncing
+        if (!existing.pendingProgress) existing.pendingProgress = [];
+        if (!existing.pendingProgress.includes(progress)) {
+          existing.pendingProgress.push(progress);
+          await saveTrackedItem(existing);
+        }
+        if (settings.confirmationMode === 'quick' && tabId) {
+          showToast(tabId, `📖 ${title} Ch.${progress}`, 'Track this chapter?', 'info', 5000);
+        }
       }
     }
   } else {
-    // Session discovery - don't save to persistent storage yet unless linked
-    const discovery: TrackedItem = {
-      platformKey,
-      platform,
-      platformTitle: title,
-      type,
-      trackerIds: {},
-      lastProgress: progress,
-      status: type === 'anime' ? 'watching' : 'reading',
-      migrationStatus: 'active',
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-    };
-    sessionDiscoveries[platformKey] = discovery;
+    // 2. Check for migration or historical matches (Scenario 6)
+    const allItems = await getAllTrackedItems();
+    const duplicate = Object.values(allItems).find((item: any) =>
+      item.platformTitle.toLowerCase() === title.toLowerCase() &&
+      item.platform !== platform &&
+      item.migrationStatus === 'active'
+    );
+
+    if (duplicate) {
+      // SEAMLESS SYNC: If it's a generic item from history sync, automatically link it
+      if (duplicate.platform.startsWith('generic_') && settings.autoSyncHistory) {
+        const linkedItem: TrackedItem = {
+          ...duplicate,
+          platformKey,
+          platform,
+          updatedAt: Date.now(),
+        };
+        await saveTrackedItem(linkedItem);
+        // Delete the generic placeholder
+        const all = await getAllTrackedItems();
+        delete all[duplicate.platformKey];
+        await storageSet('tsugi:tracked', all);
+
+        if (tabId) showToast(tabId, '✓ History Matched', `Linked ${title} to ${trackerNames(linkedItem)}`, 'success');
+        return { success: true, data: null };
+      }
+
+      if (tabId) {
+        showModal(tabId, 'migration', {
+          fromItem: duplicate, toPlatform: platform, toTitle: title, toProgress: progress
+        });
+      }
+      return { success: true, data: null };
+    }
+
+    // 3. New discovery (Scenario 1)
+    if (!sessionDiscoveries[platformKey]) {
+      // ... existing discovery logic
+      const discovery: TrackedItem = {
+        platformKey, platform, platformTitle: title, type,
+        trackerIds: {}, lastProgress: progress,
+        status: type === 'anime' ? 'watching' : 'reading',
+        migrationStatus: 'active', createdAt: Date.now(), updatedAt: Date.now(),
+      };
+      sessionDiscoveries[platformKey] = discovery;
+
+      if (settings.activeTrackers.length > 0 && progress >= 1 && tabId) {
+        showModal(tabId, 'link', { platformKey, title, progress });
+      }
+    } else {
+      // Already discovered but not yet linked — update progress if user has read further
+      const existing = sessionDiscoveries[platformKey];
+      if (progress > existing.lastProgress) {
+        existing.lastProgress = progress;
+        existing.updatedAt = Date.now();
+        // Also track all chapters read so far as pending
+        if (!existing.pendingProgress) existing.pendingProgress = [];
+        if (!existing.pendingProgress.includes(progress)) {
+          existing.pendingProgress.push(progress);
+        }
+      }
+    }
   }
 
   return { success: true, data: null };
+}
+
+async function handleConfirmTracking({ platformKey, confirmed, always }: any): Promise<MessageResponse> {
+  if (!confirmed) {
+    // Scenario 4: If not confirmed, we could store in pending updates
+    return { success: true, data: null };
+  }
+
+  let item = await getTrackedItem(platformKey);
+  if (!item && sessionDiscoveries[platformKey]) {
+    item = sessionDiscoveries[platformKey];
+    delete sessionDiscoveries[platformKey];
+  }
+
+  if (item) {
+    if (always) item.autoTrack = true;
+    await saveTrackedItem(item);
+    // If not linked yet, background can't sync to tracker. 
+    // Usually LINK_ENTRY message follows search from popup.
+  }
+
+  return { success: true, data: null };
+}
+
+function showToast(tabId: number, title: string, subtitle: string, type: 'success' | 'warning' | 'error' | 'info' = 'info', duration?: number) {
+  chrome.tabs.sendMessage(tabId, { type: 'SHOW_TOAST', payload: { title, subtitle, type, duration } }).catch(() => { });
+}
+
+function showModal(tabId: number, modalType: 'link' | 'migration' | 'jump' | 'fallback', data: any) {
+  chrome.tabs.sendMessage(tabId, { type: 'SHOW_MODAL', payload: { modalType, data } }).catch(() => { });
 }
 
 // ─── Link / Unlink ────────────────────────────────────────────────────────────
@@ -324,10 +464,16 @@ async function handleLinkEntry({ platformKey, tracker, entryId, status }: any): 
   if (status) item.status = status;
   item.updatedAt = Date.now();
 
+  // Use the highest progress seen (pending or lastProgress) for the initial sync
+  const pendingMax = (item.pendingProgress?.length ?? 0) > 0 ? Math.max(...item.pendingProgress!) : 0;
+  const syncProgress = Math.max(item.lastProgress, pendingMax);
+  item.lastProgress = syncProgress;
+  item.pendingProgress = []; // Clear pending after linking
+
   await saveTrackedItem(item);
 
-  // Push initial sync immediately
-  await syncToTrackers(platformKey, item.lastProgress);
+  // Push initial sync immediately with the highest known progress
+  await syncToTrackers(platformKey, syncProgress);
 
   return { success: true, data: null };
 }
@@ -347,8 +493,21 @@ async function handleUnlinkEntry({ platformKey, tracker }: { platformKey: string
 async function handleSyncProgress(platformKey: string): Promise<MessageResponse> {
   const item = await getTrackedItem(platformKey);
   if (!item) return { success: false, error: 'Not tracking this entry' };
-  await syncToTrackers(platformKey, item.lastProgress);
+
+  const pending = item.pendingProgress ?? [];
+  const newProgress = pending.length > 0 ? Math.max(...pending) : item.lastProgress;
+
+  item.lastProgress = newProgress;
+  item.pendingProgress = []; // Clear pending after sync
+  await saveTrackedItem(item);
+  await syncToTrackers(platformKey, newProgress);
   return { success: true, data: null };
+}
+
+// ─── UTILS ───────────────────────────────────────────────────────────────────
+
+function trackerNames(item: TrackedItem): string {
+  return Object.keys(item.trackerIds).map(t => t.toUpperCase()).join(', ');
 }
 
 async function syncToTrackers(platformKey: string, progress: number): Promise<void> {
@@ -376,5 +535,100 @@ async function syncToTrackers(platformKey: string, progress: number): Promise<vo
 
   await Promise.allSettled(syncs);
   item.lastSyncedAt = Date.now();
+  item.pendingProgress = []; // Clear pending after successful batch sync
   await saveTrackedItem(item);
+}
+
+// ─── Aidoku Sources ───────────────────────────────────────────────────────────
+
+async function handleGetAidokuSources(): Promise<MessageResponse> {
+  try {
+    const cached = await chrome.storage.local.get(AIDOKU_CACHE_KEY);
+    const index = cached[AIDOKU_CACHE_KEY] as AidokuSourceIndex | undefined;
+
+    if (!index || Date.now() - index.lastUpdated > AIDOKU_REFRESH_INTERVAL) {
+      return { success: true, data: await fetchAidokuSources() };
+    }
+
+    return { success: true, data: index.sources };
+  } catch (err: any) {
+    return { success: false, error: err.message };
+  }
+}
+
+async function fetchAidokuSources(): Promise<AidokuSource[]> {
+  try {
+    const resp = await fetch(AIDOKU_SOURCES_URL);
+    const data = await resp.json();
+    const sources: AidokuSource[] = data.sources.map((s: any) => ({
+      id: s.id,
+      name: s.name,
+      baseURL: s.baseURL,
+      languages: s.languages,
+      iconURL: s.iconURL.startsWith('http') ? s.iconURL : `https://aidoku-community.github.io/sources/${s.iconURL}`
+    }));
+
+    const index: AidokuSourceIndex = {
+      sources,
+      lastUpdated: Date.now()
+    };
+
+    await chrome.storage.local.set({ [AIDOKU_CACHE_KEY]: index });
+    return sources;
+  } catch (err) {
+    console.error('[Tsugi] Failed to fetch Aidoku sources:', err);
+    throw err;
+  }
+}
+
+// Initialize Aidoku sources on startup
+chrome.runtime.onStartup.addListener(() => fetchAidokuSources().catch(() => { }));
+chrome.runtime.onInstalled.addListener(() => fetchAidokuSources().catch(() => { }));
+
+async function syncAllHistory(): Promise<void> {
+  const settings = await getSettings();
+  const syncs = settings.activeTrackers.map(async (tracker) => {
+    const auth = settings.auth[tracker];
+    if (!auth) return;
+    try {
+      const token = await ensureValidToken(tracker);
+      let entries: TrackerEntry[] = [];
+      if (tracker === 'mal') {
+        const manga = await getMALUserList('manga', token);
+        const anime = await getMALUserList('anime', token);
+        entries = [...manga, ...anime];
+      } else if (tracker === 'anilist' && auth.username) {
+        const manga = await getAniListUserList(auth.username, 'MANGA', token);
+        const anime = await getAniListUserList(auth.username, 'ANIME', token);
+        entries = [...manga, ...anime];
+      }
+
+      for (const entry of entries) {
+        const platformType = entry.type === 'anime' ? 'generic_anime' : 'generic_manga';
+        const platformKey = makePlatformKey(platformType, entry.title);
+        let item = await getTrackedItem(platformKey);
+        if (!item) {
+          item = {
+            platformKey,
+            platform: platformType,
+            platformTitle: entry.title,
+            type: entry.type,
+            trackerIds: { [tracker]: entry.id },
+            lastProgress: entry.progress,
+            status: entry.status,
+            migrationStatus: 'active',
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          };
+        } else {
+          item.trackerIds[tracker] = entry.id;
+          if (entry.progress > item.lastProgress) item.lastProgress = entry.progress;
+        }
+        await saveTrackedItem(item);
+      }
+    } catch (err) {
+      console.error(`[Tsugi] Failed to sync history for ${tracker}:`, err);
+    }
+  });
+  await Promise.allSettled(syncs);
 }

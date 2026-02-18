@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
-import type { TrackerEntry, TrackerType, AppSettings, TrackedItem, PlatformType, MediaType, MediaStatus } from '@/lib/types';
+import type { TrackerEntry, TrackerType, AppSettings, TrackedItem, PlatformType, MediaType, MediaStatus, MessageResponse, AidokuSource } from '@/lib/types';
 import { PLATFORM_LABELS, ANIME_PLATFORMS, MANGA_PLATFORMS } from '@/lib/migrations/index';
 import { slugify } from '@/lib/utils/storage';
 
@@ -31,6 +31,16 @@ const TRACKER_LABELS: Record<TrackerType, string> = {
   bangumi: 'Bangumi',
 };
 
+const STATUS_CONFIG: Record<MediaStatus, { label: string; color: string }> = {
+  watching: { label: 'Watching', color: '#3b82f6' },
+  reading: { label: 'Reading', color: '#10b981' },
+  completed: { label: 'Completed', color: '#10b981' },
+  on_hold: { label: 'On Hold', color: '#f59e0b' },
+  dropped: { label: 'Dropped', color: '#f43f5e' },
+  plan_to_watch: { label: 'Planning', color: '#6b7280' },
+  plan_to_read: { label: 'Planning', color: '#6b7280' },
+};
+
 // ─── Shared Components ────────────────────────────────────────────────────────
 
 function Toggle({ on, onChange }: { on: boolean; onChange: () => void }) {
@@ -59,13 +69,15 @@ function Spinner() {
 
 function Section({ title, children, isLive }: { title: string; children: React.ReactNode; isLive?: boolean }) {
   return (
-    <div style={{ marginBottom: 12 }}>
+    <div style={{ marginBottom: 16 }}>
       <div className="settings-section-header">
         {isLive && <span className="live-indicator" />}
         {title}
         <div className="section-line" />
       </div>
-      {children}
+      <div style={{ background: 'var(--bg-surface)', borderRadius: 10, border: '1px solid var(--border-subtle)', overflow: 'hidden' }}>
+        {children}
+      </div>
     </div>
   );
 }
@@ -73,8 +85,45 @@ function Section({ title, children, isLive }: { title: string; children: React.R
 function Header({ title, onBack }: { title: string; onBack: () => void }) {
   return (
     <div className="view-header">
-      <button onClick={onBack} className="migrate-btn" style={{ opacity: 1, visibility: 'visible', fontSize: 16 }}>←</button>
+      <button onClick={onBack} className="btn-icon">←</button>
       <span className="header-title">{title}</span>
+    </div>
+  );
+}
+
+function PendingUpdatesBanner({ items, onSync }: { items: TrackedItem[], onSync: () => Promise<void> }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (items.length === 0 || dismissed) return null;
+  return (
+    <div className="error-banner" style={{ background: 'var(--accent-soft)', borderColor: 'var(--accent)', color: 'var(--text-primary)', marginBottom: 20, marginTop: 8, padding: '10px 14px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontWeight: 800, fontSize: 11, marginBottom: 4, letterSpacing: '0.05em', color: 'var(--accent)' }}>⚠ PENDING UPDATES</div>
+          <div style={{ fontSize: 11, opacity: 0.9, lineHeight: 1.4 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              {items.map(i => (
+                <div key={i.platformKey} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>{i.platformTitle}</span>
+                  <span style={{ flexShrink: 0, opacity: 0.7, fontVariantNumeric: 'tabular-nums' }}>Ch. {i.pendingProgress?.join(', ')}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: 6, flexShrink: 0 }}>
+          <button
+            onClick={() => setDismissed(true)}
+            className="btn-icon"
+            title="Dismiss"
+            style={{ fontSize: 11, padding: '4px 8px' }}
+          >✕</button>
+          <button
+            onClick={async () => { await onSync(); setDismissed(true); }}
+            className="btn-accent"
+            style={{ padding: '6px 12px', fontSize: 11, whiteSpace: 'nowrap' }}
+          >Sync All</button>
+        </div>
+      </div>
     </div>
   );
 }
@@ -110,34 +159,44 @@ function LoginView({ settings, onBack, onAuthSuccess }: {
   return (
     <div className="view-container">
       <Header title="Accounts" onBack={onBack} />
-      <div className="scroll-area">
+      <div className="scroll-area" style={{ padding: 0 }}>
         {error && <div className="error-banner">{error}</div>}
-        <p className="status-text" style={{ padding: '8px 4px 16px' }}>Sign in to sync your progress across trackers.</p>
+        <p className="status-text" style={{ padding: '16px 16px 8px', fontSize: 13 }}>
+          Sign in to sync your progress across trackers.
+        </p>
 
         {(['mal', 'anilist', 'shikimori', 'bangumi'] as TrackerType[]).map((tracker) => {
           const auth = settings.auth[tracker];
           const isLoading = loading === tracker;
+          const isSoon = tracker === 'shikimori' || tracker === 'bangumi';
+
           return (
-            <div key={tracker} className="settings-row">
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                <div className="dot-indicator" style={{ background: TRACKER_COLORS[tracker] }} />
-                <div>
-                  <div className="track-title" style={{ fontSize: 14 }}>{TRACKER_LABELS[tracker]}</div>
-                  {auth?.username && (
-                    <div className="status-text" style={{ marginTop: 1 }}>@{auth.username}</div>
-                  )}
-                </div>
+            <div key={tracker} className="account-row" style={isSoon ? { opacity: 0.6 } : {}}>
+              <div className="account-info">
+                <div className="account-dot" style={{ background: TRACKER_COLORS[tracker] }} />
+                <span className="account-name">{TRACKER_LABELS[tracker]}</span>
+                {auth?.username && (
+                  <span className="status-text" style={{ fontSize: 11, opacity: 0.6 }}>@{auth.username}</span>
+                )}
+                {isSoon && (
+                  <span className="badge" style={{ fontSize: 9, padding: '2px 6px', marginLeft: 8, background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', border: '1px solid var(--border-subtle)' }}>SOON</span>
+                )}
               </div>
               {auth ? (
-                <button onClick={() => handleLogout(tracker)} className="migrate-btn" style={{ opacity: 1, visibility: 'visible' }}>
+                <button onClick={() => handleLogout(tracker)} className="btn-accent" style={{ width: 84, height: 32, fontSize: 11, background: 'var(--bg-surface-hover)', border: '1px solid var(--border-subtle)', color: 'var(--text-muted)' }}>
                   Sign out
                 </button>
               ) : (
                 <button
-                  onClick={() => handleAuth(tracker)}
-                  disabled={!!loading}
-                  className="btn-accent"
-                  style={{ background: TRACKER_COLORS[tracker], padding: '6px 14px', fontSize: 12 }}
+                  onClick={() => !isSoon && handleAuth(tracker)}
+                  disabled={!!loading || isSoon}
+                  className="btn-accent btn-connect"
+                  style={{
+                    background: isSoon ? 'var(--bg-surface-hover)' : TRACKER_COLORS[tracker],
+                    color: isSoon ? 'var(--text-muted)' : '#fff',
+                    border: isSoon ? '1px solid var(--border-subtle)' : 'none',
+                    cursor: isSoon ? 'default' : 'pointer'
+                  }}
                 >
                   {isLoading ? '...' : 'Connect'}
                 </button>
@@ -179,22 +238,19 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
       });
       setResults(data);
     } catch (e: any) {
-      alert(e.message);
+      console.error(e);
     } finally {
       setLoading(false);
     }
   }
 
-  // Auto-trigger search if initial query provided
   useEffect(() => {
     if (initialQuery) {
       search();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function link(entry: TrackerEntry) {
-    // Standardize key to match detected prefix
     const key = platformKey || `generic_${mediaType}:${slugify(entry.title)}`;
     await msg({ type: 'LINK_ENTRY', payload: { platformKey: key, tracker, entryId: entry.id, status } });
     onBack();
@@ -215,7 +271,7 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
     <div className="view-container">
       <div className="search-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-          <button onClick={onBack} className="migrate-btn" style={{ opacity: 1, visibility: 'visible' }}>←</button>
+          <button onClick={onBack} className="btn-icon">←</button>
           <input
             className="full-bleed-search" autoFocus placeholder="Search titles..."
             value={query} onChange={e => setQuery(e.target.value)}
@@ -231,18 +287,22 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
             </button>
           ))}
           <div style={{ width: 1, height: 20, background: 'var(--border-subtle)', margin: '0 4px' }} />
-          {authedTrackers.map(t => (
-            <button key={t} onClick={() => setTracker(t)}
-              className={`search-pill ${tracker === t ? 'active' : ''}`}>
-              {TRACKER_LABELS[t]}
-            </button>
-          ))}
+          {authedTrackers.map(t => {
+            const isSoon = t === 'shikimori' || t === 'bangumi';
+            return (
+              <button key={t} onClick={() => !isSoon && setTracker(t)}
+                className={`search-pill ${tracker === t ? 'active' : ''}`}
+                style={isSoon ? { opacity: 0.5, cursor: 'default' } : {}}
+              >
+                {TRACKER_LABELS[t]} {isSoon && '(Soon)'}
+              </button>
+            );
+          })}
         </div>
 
         <div className="status-text" style={{ padding: '4px 0 8px' }}>INITIAL STATUS:</div>
         <div className="pill-list" style={{ padding: '0 0 12px' }}>
           {(['watching', 'reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'] as MediaStatus[]).map(s => {
-            // Filter out watching for manga, reading for anime if needed, but let's just make it context-aware
             if (mediaType === 'manga' && s === 'watching') return null;
             if (mediaType === 'anime' && s === 'reading') return null;
             return (
@@ -269,16 +329,12 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
                 <div className="track-title">{entry.title}</div>
                 <div className="status-text">
                   {entry.type} · {entry.totalChapters ?? entry.totalEpisodes ?? '?'} {entry.type === 'anime' ? 'eps' : 'ch'}
-                  {entry.score ? ` · ★ ${entry.score.toFixed(1)}` : ''}
                 </div>
               </div>
             </div>
             <span className="badge" style={{ color: 'var(--accent)', borderColor: 'var(--accent-soft)', padding: '4px 10px' }}>Link</span>
           </div>
         ))}
-        {!loading && results.length === 0 && query && (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>No results found.</div>
-        )}
       </div>
     </div>
   );
@@ -296,8 +352,6 @@ function MigrateView({ item, onBack, onDone }: {
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const platformOptions = item.type === 'anime' ? ANIME_PLATFORMS : [...ANIME_PLATFORMS, ...MANGA_PLATFORMS];
-
   async function handleMigrate() {
     if (!toPlatform || !toPlatformTitle.trim()) return;
     setLoading(true);
@@ -313,7 +367,7 @@ function MigrateView({ item, onBack, onDone }: {
       });
       onDone();
     } catch (e: any) {
-      alert(e.message);
+      console.error(e);
     } finally {
       setLoading(false);
     }
@@ -324,68 +378,31 @@ function MigrateView({ item, onBack, onDone }: {
       <Header title="Migrate Entry" onBack={onBack} />
       <div className="scroll-area">
         <div className="pipeline-flow">
-          {/* From Node */}
           <div className="pipeline-node faded">
-            <div className="status-text" style={{ marginBottom: 4, textTransform: 'uppercase', letterSpacing: 1 }}>Source</div>
+            <div className="status-text" style={{ marginBottom: 4, textTransform: 'uppercase' }}>Source</div>
             <div className="track-title">{item.platformTitle}</div>
-            <div className="status-text">{PLATFORM_LABELS[item.platform]} · {item.type}</div>
+            <div className="status-text">{PLATFORM_LABELS[item.platform]}</div>
           </div>
-
-          <div className="pipeline-connector">
-            <div style={{ height: 20, width: 1, background: 'var(--text-ghost)', marginBottom: 4 }} />
-            <div style={{ fontSize: 14 }}>⇄</div>
-            <div style={{ height: 20, width: 1, background: 'var(--border-subtle)', marginTop: 4 }} />
-          </div>
-
-          {/* To Node */}
+          <div className="pipeline-connector">⇄</div>
           <div className="pipeline-node">
-            <div className="status-text" style={{ marginBottom: 12, textTransform: 'uppercase', letterSpacing: 1, color: 'var(--accent)' }}>Destination</div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <select
-                className="full-bleed-search"
-                style={{ padding: '8px 12px', fontSize: 14 }}
-                value={toPlatform}
-                onChange={e => setToPlatform(e.target.value as PlatformType)}
-              >
-                <option value="">Select platform...</option>
-                {platformOptions
-                  .filter(p => p !== item.platform)
-                  .map(p => (
-                    <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>
-                  ))}
-              </select>
-
-              <input
-                className="full-bleed-search"
-                style={{ padding: '8px 12px', fontSize: 14 }}
-                value={toPlatformTitle}
-                onChange={e => setToPlatformTitle(e.target.value)}
-                placeholder="Title on new platform..."
-              />
-            </div>
+            <div className="status-text" style={{ marginBottom: 12, textTransform: 'uppercase', color: 'var(--accent)' }}>Destination</div>
+            <select
+              className="full-bleed-search"
+              value={toPlatform}
+              onChange={e => setToPlatform(e.target.value as PlatformType)}
+            >
+              <option value="">Select platform...</option>
+              {(item.type === 'anime' ? ANIME_PLATFORMS : MANGA_PLATFORMS)
+                .filter(p => p !== item.platform)
+                .map(p => (
+                  <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>
+                ))}
+            </select>
           </div>
-        </div>
-
-        <div style={{ padding: '0 20px 20px' }}>
-          <div className="status-text" style={{ marginBottom: 8 }}>Reason (optional)</div>
-          <input
-            className="full-bleed-search"
-            style={{ padding: '8px 12px', fontSize: 13 }}
-            value={reason}
-            onChange={e => setReason(e.target.value)}
-            placeholder="e.g. Broken links, better quality..."
-          />
         </div>
       </div>
-
       <div className="sticky-bottom">
-        <button
-          onClick={handleMigrate}
-          disabled={!toPlatform || !toPlatformTitle || loading}
-          className="btn-accent"
-          style={{ width: '100%', padding: '14px', borderRadius: 12, fontSize: 15 }}
-        >
+        <button onClick={handleMigrate} disabled={!toPlatform || loading} className="btn-accent" style={{ width: '100%' }}>
           {loading ? 'Moving...' : 'Migrate & Archive'}
         </button>
       </div>
@@ -401,16 +418,24 @@ function SettingsView({ settings, onBack, onOpenLogin, onUpdate }: {
   onOpenLogin: () => void;
   onUpdate: () => void;
 }) {
-  async function toggle(key: 'updateAfterReading' | 'autoSyncHistory') {
+  const [sourcesCount, setSourcesCount] = useState<number>(0);
+
+  useEffect(() => {
+    msg<MessageResponse<AidokuSource[]>>({ type: 'GET_AIDOKU_SOURCES' }).then(res => {
+      if (res.success && Array.isArray(res.data)) setSourcesCount(res.data.length);
+    });
+  }, []);
+
+  const toggle = async (key: keyof AppSettings) => {
     await msg({ type: 'SAVE_SETTINGS', payload: { [key]: !settings[key] } });
     onUpdate();
-  }
+  };
 
-  async function setDefault(tracker: TrackerType) {
+  const setDefault = async (tracker: TrackerType) => {
     const next = settings.defaultTracker === tracker ? null : tracker;
     await msg({ type: 'SAVE_SETTINGS', payload: { defaultTracker: next } });
     onUpdate();
-  }
+  };
 
   const authedTrackers = (['mal', 'anilist', 'shikimori', 'bangumi'] as TrackerType[])
     .filter(t => !!settings.auth[t]);
@@ -418,49 +443,103 @@ function SettingsView({ settings, onBack, onOpenLogin, onUpdate }: {
   return (
     <div className="view-container">
       <Header title="Settings" onBack={onBack} />
-      <div className="scroll-area">
+      <div className="scroll-area" style={{ padding: '0 16px' }}>
         <Section title="ACCOUNTS">
           {authedTrackers.length === 0 ? (
-            <div style={{ padding: '12px 20px', color: 'var(--text-muted)', fontSize: 13 }}>No trackers connected.</div>
+            <div style={{ padding: '16px 20px', color: 'var(--text-muted)', fontSize: 13, textAlign: 'center' }}>
+              No trackers connected.
+            </div>
           ) : (
             authedTrackers.map(t => (
               <div key={t} className="settings-row">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <div className="dot-indicator" style={{ background: TRACKER_COLORS[t] }} />
-                  <div>
-                    <div className="track-title" style={{ fontSize: 14 }}>{TRACKER_LABELS[t]}</div>
+                  <div className="account-dot" style={{ background: TRACKER_COLORS[t] }} />
+                  <div className="settings-label">
+                    <span className="settings-title" style={{ fontSize: 13 }}>{TRACKER_LABELS[t]}</span>
                     {settings.auth[t]?.username && (
-                      <div className="status-text" style={{ marginTop: 1 }}>@{settings.auth[t]!.username}</div>
+                      <span className="settings-desc">@{settings.auth[t]!.username}</span>
                     )}
                   </div>
                 </div>
-                <button onClick={() => setDefault(t)} className={`search-pill ${settings.defaultTracker === t ? 'active' : ''}`} style={{ fontSize: 11, padding: '4px 10px' }}>
+                <button
+                  onClick={() => setDefault(t)}
+                  className={`search-pill ${settings.defaultTracker === t ? 'active' : ''}`}
+                  style={{ fontSize: 10, padding: '4px 8px', borderRadius: 4 }}
+                >
                   {settings.defaultTracker === t ? '★ Default' : 'Set default'}
                 </button>
               </div>
             ))
           )}
-          <div style={{ padding: '8px 20px' }}>
-            <button onClick={onOpenLogin} className="migrate-btn" style={{ opacity: 1, visibility: 'visible', width: '100%', borderStyle: 'dashed' }}>
-              {authedTrackers.length === 0 ? '+ Connect a tracker' : '+ Manage accounts'}
+          <div style={{ padding: '12px 16px' }}>
+            <button
+              onClick={onOpenLogin}
+              className="btn-accent"
+              style={{ width: '100%', height: 32, fontSize: 11, background: 'var(--bg-surface-hover)', border: '1px solid var(--border-subtle)', color: 'var(--text-primary)' }}
+            >
+              {authedTrackers.length === 0 ? '+ Connect a tracker' : 'Manage Accounts'}
             </button>
           </div>
         </Section>
 
         <Section title="PREFERENCES">
           <div className="settings-row">
-            <div style={{ flex: 1 }}>
-              <div className="track-title" style={{ fontSize: 13 }}>Update After Reading</div>
-              <div className="status-text">Auto-sync progress when you finish a chapter/episode</div>
+            <div className="settings-label">
+              <span className="settings-title">Update After Reading</span>
+              <span className="settings-desc">Auto-sync progress when you finish a chapter/episode</span>
             </div>
             <Toggle on={settings.updateAfterReading} onChange={() => toggle('updateAfterReading')} />
           </div>
+
           <div className="settings-row">
-            <div style={{ flex: 1 }}>
-              <div className="track-title" style={{ fontSize: 13 }}>Auto Sync History</div>
-              <div className="status-text">Pull progress from tracker into local history</div>
+            <div className="settings-label">
+              <span className="settings-title">Auto Sync History</span>
+              <span className="settings-desc">Pull progress from tracker into local history</span>
             </div>
             <Toggle on={settings.autoSyncHistory} onChange={() => toggle('autoSyncHistory')} />
+          </div>
+
+          <div className="settings-row" style={{ padding: '12px 16px' }}>
+            <div className="settings-label">
+              <span className="settings-title">Confirmation Mode</span>
+              <span className="settings-desc">How community sources should track progress</span>
+            </div>
+            <select
+              className="status-select"
+              value={settings.confirmationMode}
+              onChange={e => msg({ type: 'SAVE_SETTINGS', payload: { confirmationMode: e.target.value as any } }).then(onUpdate)}
+              style={{ fontSize: 11, padding: '4px 10px' }}
+            >
+              <option value="ask">BLOCKING</option>
+              <option value="quick">QUICK (5s)</option>
+              <option value="auto">ALWAYS</option>
+            </select>
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              <span className="settings-title">Batch Sync Pending</span>
+              <span className="settings-desc">Notify about unsynced chapters in popup</span>
+            </div>
+            <Toggle on={settings.batchSyncPending} onChange={() => toggle('batchSyncPending')} />
+          </div>
+
+          <div className="settings-row">
+            <div className="settings-label">
+              <span className="settings-title">Show Chapter Badge</span>
+              <span className="settings-desc">Show count on extension icon</span>
+            </div>
+            <Toggle on={settings.showChapterBadge} onChange={() => toggle('showChapterBadge')} />
+          </div>
+        </Section>
+
+        <Section title="AUTOMATION">
+          <div className="settings-row" style={{ borderBottom: 'none' }}>
+            <div className="settings-label">
+              <span className="settings-title">Community Sources</span>
+              <span className="settings-desc">Auto-track {sourcesCount || '115+'} manga sites</span>
+            </div>
+            <div className="badge" style={{ background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)' }}>ACTIVE</div>
           </div>
         </Section>
       </div>
@@ -479,67 +558,77 @@ function HomeView({ settings, trackedItems, currentKey, onSearch, onSettings, on
   onMigrate: (item: TrackedItem) => void;
   onUpdate: () => void;
 }) {
+  const [syncing, setSyncing] = useState(false);
   const hasAuth = settings.activeTrackers.length > 0 && Object.keys(settings.auth).length > 0;
-
   const currentlyViewing = trackedItems.find(item => item.platformKey === currentKey);
-  const animeHistory = trackedItems.filter(item =>
-    item.type === 'anime' &&
-    item !== currentlyViewing &&
-    Object.keys(item.trackerIds).length > 0
-  );
-  const mangaHistory = trackedItems.filter(item =>
-    item.type !== 'anime' &&
-    item !== currentlyViewing &&
-    Object.keys(item.trackerIds).length > 0
-  );
+  const animeHistory = trackedItems.filter(item => item.type === 'anime' && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+  const mangaHistory = trackedItems.filter(item => item.type !== 'anime' && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+
+  const handleManualSync = async () => {
+    setSyncing(true);
+    try {
+      await msg({ type: 'SYNC_ALL_HISTORY' });
+      onUpdate();
+    } finally {
+      setSyncing(false);
+    }
+  };
 
   const renderItem = (item: TrackedItem, isLive = false) => {
     const isUnlinked = Object.keys(item.trackerIds).length === 0;
+    const latestPending = (item.pendingProgress?.length ?? 0) > 0 ? Math.max(...item.pendingProgress!) : null;
     const progressLabel = `${item.type === 'anime' ? 'EP' : 'CH'} ${item.lastProgress}`;
+
+    const statusInfo = STATUS_CONFIG[item.status] || { label: item.status, color: 'var(--text-muted)' };
+    const mediaCondition = item.publishingStatus?.toLowerCase().replace(/_/g, ' ');
 
     return (
       <div key={item.platformKey} className={`track-card ${isLive ? 'active' : ''}`}>
-        <div className="track-info">
-          <div className="track-title">{item.platformTitle}</div>
+        <div className="track-info" style={{ flex: 1, minWidth: 0, paddingRight: 8 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+            <div className="track-title" style={{ flex: 1 }}>{item.platformTitle}</div>
+            <div style={{ flexShrink: 0 }}>
+              <Badge label={statusInfo.label} color={statusInfo.color} />
+            </div>
+          </div>
           <div className="track-meta">
             <Badge label={PLATFORM_LABELS[item.platform]} color="var(--text-muted)" />
             <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>•</span>
-            <span style={{ color: 'var(--text-primary)', fontSize: 10, fontWeight: 700 }}>{progressLabel}</span>
-            {!isUnlinked && (
-              <div className="status-select-wrapper">
-                <select
-                  className="status-select"
-                  value={item.status}
-                  onChange={async (e) => {
-                    const newStatus = e.target.value as MediaStatus;
-                    const tracker = Object.keys(item.trackerIds)[0] as TrackerType;
-                    await msg({ type: 'LINK_ENTRY', payload: { platformKey: item.platformKey, tracker, entryId: item.trackerIds[tracker]!, status: newStatus } });
-                    onUpdate();
-                  }}
-                >
-                  <option value="watching">WATCHING</option>
-                  <option value="reading">READING</option>
-                  <option value="completed">COMPLETED</option>
-                  <option value="on_hold">ON HOLD</option>
-                  <option value="dropped">DROPPED</option>
-                  <option value="plan_to_read">PLAN TO READ</option>
-                </select>
-              </div>
+            <span style={{ color: 'var(--text-primary)', fontSize: 10, fontWeight: 700 }}>
+              {progressLabel}
+              {latestPending && latestPending > item.lastProgress && (
+                <span className="unsynced-info" style={{ color: 'var(--accent)', marginLeft: 6, opacity: 0.9 }}>
+                  → Ch.{latestPending} <span style={{ fontSize: 9, fontStyle: 'italic', fontWeight: 500 }}>(Unsynced)</span>
+                </span>
+              )}
+            </span>
+            {mediaCondition && (
+              <>
+                <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>•</span>
+                <span style={{ color: 'var(--text-muted)', fontSize: 10, textTransform: 'capitalize' }}>{mediaCondition}</span>
+              </>
             )}
-            {Object.keys(item.trackerIds).map(t => (
-              <div key={t} className="dot-indicator" style={{ background: TRACKER_COLORS[t as TrackerType] }} title={TRACKER_LABELS[t as TrackerType]} />
-            ))}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          {!isUnlinked && latestPending && (
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                await msg({ type: 'SYNC_PROGRESS', payload: { platformKey: item.platformKey } });
+                onUpdate();
+              }}
+              className="btn-icon"
+              title="Sync Now"
+              style={{ color: 'var(--accent)', borderColor: 'var(--accent-soft)', background: 'var(--accent-soft)' }}
+            >
+              ↑
+            </button>
+          )}
           {isUnlinked ? (
-            <button onClick={() => onSearch(item.platformKey, item.platformTitle)} className="btn-accent" style={{ padding: '4px 10px', fontSize: 10, background: 'var(--accent)' }}>
-              Link
-            </button>
+            <button onClick={() => onSearch(item.platformKey, item.platformTitle)} className="btn-accent" style={{ padding: '3px 8px', fontSize: 10 }}>Link</button>
           ) : (
-            <button onClick={() => onMigrate(item)} className="migrate-btn" title="Migrate">
-              ⇄
-            </button>
+            <button onClick={() => onMigrate(item)} className="btn-icon">⇄</button>
           )}
         </div>
       </div>
@@ -548,64 +637,66 @@ function HomeView({ settings, trackedItems, currentKey, onSearch, onSettings, on
 
   return (
     <div className="view-container">
-      {/* Header */}
       <div className="app-header">
-        <div className="logo-container" style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-          <img src="/app-icon.svg" alt="" style={{ width: 32, height: 32 }} />
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <h1 className="logo-text" style={{ fontSize: '18px', lineHeight: '1.2', marginBottom: '2px' }}>
-              Tsugi
-            </h1>
-            <div className="status-text">
-              {hasAuth
-                ? `${settings.activeTrackers.map(t => TRACKER_LABELS[t]).join(' · ')}`
-                : 'No trackers connected'}
-            </div>
+        <div className="logo-container">
+          <img src="/app-icon.svg" alt="" style={{ width: 28, height: 28 }} />
+          <div>
+            <h1 className="logo-text" style={{ margin: 0 }}>Tsugi</h1>
+            <div className="status-text">{hasAuth ? 'Trackers Active' : 'No Trackers Connected'}</div>
           </div>
         </div>
-        <button onClick={onSettings} className="migrate-btn" style={{ opacity: 1, visibility: 'visible' }}>⚙</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          {hasAuth && (
+            <button
+              onClick={handleManualSync}
+              disabled={syncing}
+              className={`btn-icon ${syncing ? 'syncing-spin' : ''}`}
+              title="Sync from Trackers"
+            >
+              ↻
+            </button>
+          )}
+          <button onClick={onSettings} className="btn-icon">⚙</button>
+        </div>
       </div>
 
-      {/* No auth banner */}
       {!hasAuth && (
         <div className="error-banner" style={{ borderStyle: 'dashed', background: 'transparent' }}>
-          Connect a tracker in Settings to start syncing.
+          Connect a tracker in Settings to start.
         </div>
       )}
 
-      {/* Active tracking list */}
       <div className="scroll-area">
+        {settings.batchSyncPending && (
+          <PendingUpdatesBanner
+            items={trackedItems.filter(i => (i.pendingProgress?.length ?? 0) > 0)}
+            onSync={async () => {
+              await Promise.all(
+                trackedItems
+                  .filter(i => (i.pendingProgress?.length ?? 0) > 0)
+                  .map(i => msg({ type: 'SYNC_PROGRESS', payload: { platformKey: i.platformKey } }))
+              );
+              onUpdate();
+            }}
+          />
+        )}
+
         {currentlyViewing && (
           <Section title="CURRENTLY VIEWING" isLive>
             {renderItem(currentlyViewing, true)}
           </Section>
         )}
 
-        {animeHistory.length > 0 && (
-          <Section title="ANIME">
-            {animeHistory.map(item => renderItem(item))}
-          </Section>
-        )}
+        {animeHistory.length > 0 && <Section title="ANIME">{animeHistory.map(item => renderItem(item))}</Section>}
+        {mangaHistory.length > 0 && <Section title="MANGA">{mangaHistory.map(item => renderItem(item))}</Section>}
 
-        {mangaHistory.length > 0 && (
-          <Section title="MANGA">
-            {mangaHistory.map(item => renderItem(item))}
-          </Section>
-        )}
-
-        {animeHistory.length === 0 && mangaHistory.length === 0 && !currentlyViewing && (
-          <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>
-            Nothing tracked yet.<br />
-            <span style={{ fontSize: 11, opacity: 0.6 }}>Visit a manga/anime page to start.</span>
-          </div>
+        {trackedItems.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Visit a site to track.</div>
         )}
       </div>
 
-      {/* Add button sticky */}
       <div className="sticky-bottom">
-        <button onClick={() => onSearch()} className="btn-accent" style={{ width: '100%', height: 48, fontSize: 15 }}>
-          + Search & Track New Title
-        </button>
+        <button onClick={() => onSearch()} className="btn-accent" style={{ width: '100%', height: 36, fontSize: 13 }}>+ Search & Track</button>
       </div>
     </div>
   );
@@ -622,40 +713,26 @@ function App() {
   const [currentlyViewingKey, setCurrentlyViewingKey] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
-    const [s, items] = await Promise.all([
-      msg<AppSettings>({ type: 'GET_SETTINGS' }),
-      msg<{ active: TrackedItem[]; archived: TrackedItem[]; currentlyViewingKey: string | null }>({ type: 'GET_TRACKED_ITEMS' }),
-    ]);
-    setSettings(s);
-    setTrackedItems(items.active);
-    setCurrentlyViewingKey(items.currentlyViewingKey);
+    try {
+      const [s, items] = await Promise.all([
+        msg<AppSettings>({ type: 'GET_SETTINGS' }),
+        msg<{ active: TrackedItem[]; currentlyViewingKey: string | null }>({ type: 'GET_TRACKED_ITEMS' }),
+      ]);
+      setSettings(s);
+      setTrackedItems(items.active);
+      setCurrentlyViewingKey(items.currentlyViewingKey);
+    } catch (e) {
+      console.error(e);
+    }
   }, []);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  if (!settings) return (
-    <div className="view-container" style={{ justifyContent: 'center', alignItems: 'center' }}>
-      <Spinner />
-    </div>
-  );
-
-  if (view === 'login') return (
-    <LoginView settings={settings} onBack={() => { setView('settings'); loadAll(); }} onAuthSuccess={loadAll} />
-  );
-  if (view === 'settings') return (
-    <SettingsView settings={settings} onBack={() => setView('home')} onOpenLogin={() => setView('login')} onUpdate={loadAll} />
-  );
-  if (view === 'search') return (
-    <SearchView
-      settings={settings}
-      platformKey={searchCtx?.platformKey ?? null}
-      initialQuery={searchCtx?.query ?? null}
-      onBack={() => { setView('home'); loadAll(); }}
-    />
-  );
-  if (view === 'migrate' && migrateTarget) return (
-    <MigrateView item={migrateTarget} onBack={() => setView('home')} onDone={() => { setView('home'); loadAll(); }} />
-  );
+  if (!settings) return <div className="view-container"><Spinner /></div>;
+  if (view === 'login') return <LoginView settings={settings} onBack={() => { setView('settings'); loadAll(); }} onAuthSuccess={loadAll} />;
+  if (view === 'settings') return <SettingsView settings={settings} onBack={() => setView('home')} onOpenLogin={() => setView('login')} onUpdate={loadAll} />;
+  if (view === 'search') return <SearchView settings={settings} platformKey={searchCtx?.platformKey ?? null} initialQuery={searchCtx?.query ?? null} onBack={() => { setView('home'); loadAll(); }} />;
+  if (view === 'migrate' && migrateTarget) return <MigrateView item={migrateTarget} onBack={() => setView('home')} onDone={() => { setView('home'); loadAll(); }} />;
 
   return (
     <HomeView
@@ -669,10 +746,5 @@ function App() {
     />
   );
 }
-
-// ─── Styles ───────────────────────────────────────────────────────────────────
-// Inline styles removed. Using style.css
-
-// ─── Mount ────────────────────────────────────────────────────────────────────
 
 createRoot(document.getElementById('root')!).render(<App />);

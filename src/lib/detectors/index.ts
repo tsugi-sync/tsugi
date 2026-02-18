@@ -55,7 +55,7 @@ function isWatchingAnime(): boolean {
 }
 
 // ════════════════════════════════════════════════════════════════════════════════
-// ANIME — PIRACY
+// ANIME — COMMUNITY
 // ════════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -187,7 +187,7 @@ export const netflixDetector: PlatformDetector = {
 };
 
 // ════════════════════════════════════════════════════════════════════════════════
-// MANGA — PIRACY
+// MANGA — COMMUNITY
 // ════════════════════════════════════════════════════════════════════════════════
 
 export const mangaBatDetector: PlatformDetector = {
@@ -446,7 +446,7 @@ export const genericAnimeDetector: PlatformDetector = {
 // ════════════════════════════════════════════════════════════════════════════════
 
 export const ALL_DETECTORS: PlatformDetector[] = [
-  // Piracy anime
+  // Community anime
   zoroDetector,
   nineAnimeDetector,
   gogoanimeDetector,
@@ -455,7 +455,7 @@ export const ALL_DETECTORS: PlatformDetector[] = [
   // Legal anime
   crunchyrollDetector,
   netflixDetector,
-  // Piracy manga
+  // Community manga
   mangaBatDetector,
   mangakakalotDetector,
   tcbScansDetector,

@@ -101,24 +101,74 @@ export async function searchMAL(
   token: string
 ): Promise<TrackerEntry[]> {
   const res = await fetch(
-    `${MAL_API}/${type}?q=${encodeURIComponent(query)}&limit=12&fields=${FIELDS}`,
+    `${MAL_API}/${type}?q=${encodeURIComponent(query)}&limit=12&fields=${FIELDS},my_list_status`,
     { headers: { Authorization: `Bearer ${token}` } }
   );
   if (!res.ok) throw new Error(`MAL search failed: ${res.status}`);
   const data = await res.json();
 
-  return (data.data ?? []).map(({ node }: any) => ({
-    id: node.id,
-    title: node.title,
-    coverImage: node.main_picture?.medium ?? '',
-    type: mapMALType(node.media_type),
-    status: 'plan_to_read' as MediaStatus,
-    progress: 0,
-    score: node.mean,
-    totalChapters: node.num_chapters ?? null,
-    totalEpisodes: node.num_episodes ?? null,
-    tracker: 'mal' as const,
-  }));
+  return (data.data ?? []).map(({ node }: any) => {
+    const statusObj = node.my_list_status;
+    return {
+      id: node.id,
+      title: node.title,
+      coverImage: node.main_picture?.medium ?? '',
+      type: mapMALType(node.media_type),
+      status: mapMALStatus(statusObj?.status ?? 'plan_to_read'),
+      progress: statusObj?.num_chapters_read ?? statusObj?.num_episodes_watched ?? statusObj?.num_watched_episodes ?? 0,
+      score: node.mean,
+      totalChapters: node.num_chapters ?? null,
+      totalEpisodes: node.num_episodes ?? null,
+      tracker: 'mal' as const,
+      publishingStatus: node.status,
+    };
+  });
+}
+
+export async function getMALUserList(
+  type: 'anime' | 'manga',
+  token: string
+): Promise<TrackerEntry[]> {
+  // Fetch all statuses to be complete
+  const res = await fetch(
+    `${MAL_API}/users/@me/${type}list?limit=100&fields=${FIELDS},my_list_status`,
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
+  if (!res.ok) throw new Error(`MAL fetch list failed: ${res.status}`);
+  const data = await res.json();
+
+  return (data.data ?? []).map(({ node, list_status }: any) => {
+    // MAL sometimes uses 'list_status' and sometimes 'my_list_status' depending on the endpoint/fields
+    const statusObj = list_status || node.my_list_status;
+    return {
+      id: node.id,
+      title: node.title,
+      coverImage: node.main_picture?.medium ?? '',
+      type: mapMALType(node.media_type),
+      status: mapMALStatus(statusObj?.status ?? 'plan_to_read'),
+      progress: type === 'anime'
+        ? (statusObj?.num_episodes_watched ?? statusObj?.num_watched_episodes ?? 0)
+        : (statusObj?.num_chapters_read ?? 0),
+      score: node.mean,
+      totalChapters: node.num_chapters ?? null,
+      totalEpisodes: node.num_episodes ?? null,
+      tracker: 'mal' as const,
+      publishingStatus: node.status,
+    };
+  });
+}
+
+function mapMALStatus(status: string): MediaStatus {
+  const map: Record<string, MediaStatus> = {
+    'watching': 'watching',
+    'reading': 'reading',
+    'completed': 'completed',
+    'on_hold': 'on_hold',
+    'dropped': 'dropped',
+    'plan_to_watch': 'plan_to_watch',
+    'plan_to_read': 'plan_to_read',
+  };
+  return map[status] ?? 'watching';
 }
 
 // ─── Progress Update ──────────────────────────────────────────────────────────

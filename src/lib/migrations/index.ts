@@ -89,6 +89,7 @@ export const PLATFORM_LABELS: Record<PlatformType, string> = {
   mangakakalot: 'Mangakakalot',
   tcbscans: 'TCB Scans',
   generic_manga: 'Community Manga',
+  generic_anime: 'Community Anime',
   unknown: 'Unknown',
 };
 

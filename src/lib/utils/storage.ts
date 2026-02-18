@@ -19,6 +19,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   autoSyncHistory: false,
   auth: {},
   defaultTracker: null,
+  confirmationMode: 'quick',
+  batchSyncPending: true,
+  showChapterBadge: true,
+  notifyDetectionFailure: true,
 };
 
 export async function getSettings(): Promise<AppSettings> {

@@ -1,8 +1,7 @@
-import type { TrackerType, TrackerAuth } from '@/lib/types';
-import { getSettings, saveSettings } from '@/lib/utils/storage';
-import { refreshMALToken } from '@/lib/trackers/mal';
 import { refreshBangumiToken } from '@/lib/trackers/bangumi';
-import { exchangeShikimoriCode } from '@/lib/trackers/shikimori';
+import { refreshMALToken } from '@/lib/trackers/mal';
+import type { TrackerAuth, TrackerType } from '@/lib/types';
+import { getSettings, saveSettings } from '@/lib/utils/storage';
 
 /**
  * Ensures a tracker has a valid access token, refreshing if necessary.

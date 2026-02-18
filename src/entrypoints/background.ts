@@ -1,11 +1,11 @@
-import type { Message, MessageResponse, TrackerType, MediaStatus, AppSettings, TrackedItem, AidokuSource, AidokuSourceIndex, TrackerEntry, DetectedMedia } from '@/lib/types';
-import { getSettings, saveSettings, getTrackedItem, saveTrackedItem, getAllTrackedItems, makePlatformKey, deleteTrackedItem, storageSet } from '@/lib/utils/storage';
-import { searchMAL, updateMALProgress, getMALAuthUrl, exchangeMALCode, getMALUser, generateCodeVerifier, MAL_CLIENT_ID, getMALUserList } from '@/lib/trackers/mal';
-import { searchAniList, updateAniListProgress, getAniListAuthUrl, parseAniListToken, getAniListUser, getAniListUserList } from '@/lib/trackers/anilist';
-import { searchShikimori, updateShikimoriProgress, getShikimoriAuthUrl, exchangeShikimoriCode, getShikimoriUser } from '@/lib/trackers/shikimori';
-import { searchBangumi, updateBangumiProgress, getBangumiAuthUrl, exchangeBangumiCode, getBangumiUser, refreshBangumiToken } from '@/lib/trackers/bangumi';
-import { migratePlatform, getActiveItems, getArchivedItems } from '@/lib/migrations/index';
+import { getActiveItems, getArchivedItems, migratePlatform } from '@/lib/migrations/index';
+import { getAniListUser, getAniListUserList, parseAniListToken, searchAniList, updateAniListProgress } from '@/lib/trackers/anilist';
+import { exchangeBangumiCode, getBangumiUser, searchBangumi, updateBangumiProgress } from '@/lib/trackers/bangumi';
+import { exchangeMALCode, getMALUser, getMALUserList, searchMAL, updateMALProgress } from '@/lib/trackers/mal';
+import { exchangeShikimoriCode, getShikimoriUser, searchShikimori, updateShikimoriProgress } from '@/lib/trackers/shikimori';
+import type { AidokuSource, AidokuSourceIndex, DetectedMedia, Message, MessageResponse, TrackedItem, TrackerEntry, TrackerType } from '@/lib/types';
 import { ensureValidToken } from '@/lib/utils/auth';
+import { getAllTrackedItems, getSettings, getTrackedItem, makePlatformKey, saveSettings, saveTrackedItem, storageSet } from '@/lib/utils/storage';
 
 // Store PKCE verifiers temporarily during auth flow
 const pkceVerifiers: Partial<Record<TrackerType, string>> = {};

@@ -65,6 +65,7 @@ export function slugify(title: string): string {
     .replace(/[^a-z0-9\s-]/g, '')
     .replace(/\s+/g, '-')
     .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '') // strip leading/trailing hyphens
     .trim();
 }
 

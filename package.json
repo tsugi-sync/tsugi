@@ -10,7 +10,10 @@
     "build:firefox": "wxt build -b firefox",
     "zip": "wxt zip",
     "zip:firefox": "wxt zip -b firefox",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "pnpm": "^10.30.0"
@@ -19,10 +22,13 @@
     "@types/chrome": "^0.0.260",
     "@types/react": "^18.3.0",
     "@types/react-dom": "^18.3.0",
+    "@vitest/coverage-v8": "^4.0.18",
     "@wxt-dev/module-react": "^1.1.5",
+    "happy-dom": "^20.6.2",
     "react": "^18.3.0",
     "react-dom": "^18.3.0",
     "typescript": "^5.4.0",
+    "vitest": "^4.0.18",
     "wxt": "^0.19.0"
   }
 }

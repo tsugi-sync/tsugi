@@ -1486,3 +1486,120 @@ a {
         justify-content: center;
     }
 }
+
+/* ── Platform Tabs & Chips ────────────────────────────────────────────────── */
+
+/* Tab bar */
+.platform-tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 36px;
+}
+
+.ptab {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 9px 22px;
+    border-radius: var(--r-sm);
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--text-muted);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.ptab:hover {
+    border-color: var(--border-hi);
+    color: var(--text);
+    background: var(--accent-soft);
+}
+
+.ptab.active {
+    border-color: rgba(124, 58, 237, 0.5);
+    background: var(--accent-soft);
+    color: var(--accent-lt);
+}
+
+/* Panel */
+.ppanel {
+    display: none;
+}
+
+.ppanel.active {
+    display: block;
+}
+
+/* Group */
+.platform-group {
+    margin-bottom: 28px;
+}
+
+.platform-group-label {
+    margin-bottom: 12px;
+}
+
+.pgbadge {
+    display: inline-flex;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border-radius: 5px;
+    border: 1px solid;
+}
+
+.pgbadge.legal {
+    color: #a78bfa;
+    background: rgba(124, 58, 237, 0.1);
+    border-color: rgba(124, 58, 237, 0.25);
+}
+
+.pgbadge.community {
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.035);
+    border-color: rgba(255, 255, 255, 0.08);
+}
+
+/* Chip grid */
+.platform-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.pchip {
+    display: inline-block;
+    padding: 5px 13px;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: rgba(255, 255, 255, 0.032);
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    transition: border-color 0.18s, color 0.18s, background 0.18s;
+    white-space: nowrap;
+}
+
+.pchip:hover {
+    border-color: rgba(255, 255, 255, 0.18);
+    color: var(--text);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pchip.legal {
+    border-color: rgba(124, 58, 237, 0.2);
+    background: rgba(124, 58, 237, 0.06);
+    color: #c4b5fd;
+}
+
+.pchip.legal:hover {
+    border-color: rgba(124, 58, 237, 0.45);
+    background: rgba(124, 58, 237, 0.12);
+    color: var(--accent-lt);
+}

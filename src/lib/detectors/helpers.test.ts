@@ -6,8 +6,12 @@ describe('cleanTitle', () => {
         expect(cleanTitle('One Piece | MangaDex')).toBe('One Piece');
     });
 
-    it('removes site suffixes after colon', () => {
-        expect(cleanTitle('Bleach: Thousand Year Blood War')).toBe('Bleach');
+    it('preserves subtitles after colon', () => {
+        expect(cleanTitle('Bleach: Thousand Year Blood War')).toBe('Bleach: Thousand Year Blood War');
+    });
+
+    it('strips site boilerplate after dash', () => {
+        expect(cleanTitle('Bleach - Watch Online Free HD')).toBe('Bleach');
     });
 
     it('removes chapter info from title', () => {

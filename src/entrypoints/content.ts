@@ -3,34 +3,125 @@ import type { Message, DetectedMedia } from '@/lib/types';
 
 export default defineContentScript({
   matches: [
-    // Community anime
+    // ── Legal anime ────────────────────────────────────────────────────────────
+    '*://*.crunchyroll.com/*',
+    '*://*.netflix.com/*',
+    '*://*.hidive.com/*',
+    '*://*.hulu.com/*',
+    '*://*.funimation.com/*',
+    '*://*.animationdigitalnetwork.com/*',
+    '*://*.animeonegai.com/*',
+    '*://*.animeonsen.xyz/*',
+    '*://*.bilibili.tv/*',
+    '*://*.proxer.me/*',
+    // ── Community anime — .to / global ─────────────────────────────────────────
     '*://*.zoro.to/*',
     '*://*.aniwatch.to/*',
     '*://*.aniwatchtv.to/*',
+    '*://*.hianime.to/*',
     '*://*.9anime.to/*',
     '*://*.9anime.me/*',
     '*://*.aniwave.to/*',
+    '*://*.animesuge.to/*',
+    '*://*.anicrush.to/*',
+    '*://*.an1me.to/*',
+    '*://*.anigo.to/*',
+    '*://*.aninexus.to/*',
+    '*://*.anixl.to/*',
+    '*://*.kuudere.to/*',
+    '*://*.miruro.to/*',
+    '*://*.anidream.cc/*',
+    '*://*.anoboye.com/*',
+    '*://*.animekai.to/*',
+    '*://*.animenosub.to/*',
+    '*://*.animewho.com/*',
+    '*://*.anizium.co/*',
+    '*://*.fireani.me/*',
+    '*://*.animetsu.net/*',
     '*://*.gogoanime.me/*',
     '*://*.gogoanime.vc/*',
-    '*://*.animesuge.to/*',
-    // Legal anime
-    '*://*.crunchyroll.com/*',
-    '*://*.netflix.com/*',
-    // Community manga
+    '*://*.kickassanime.am/*',
+    '*://*.animeheaven.me/*',
+    '*://*.animeid.tv/*',
+    '*://*.animekhor.org/*',
+    '*://*.animeko.co/*',
+    '*://*.animetoast.cc/*',
+    '*://*.animexin.vip/*',
+    '*://*.animeav1.com/*',
+    '*://*.aniyan.net/*',
+    '*://*.moeclip.com/*',
+    '*://*.adkami.com/*',
+    '*://*.toonanime.cc/*',
+    '*://*.topanimes.net/*',
+    '*://*.kaguya.app/*',
+    '*://*.luciferdonghua.in/*',
+    '*://*.animepahe.com/*',
+    // ── Community anime — ES/LATAM ──────────────────────────────────────────────
+    '*://*.animeflv.net/*',
+    '*://*.jkanime.net/*',
+    '*://*.tioanime.com/*',
+    '*://*.latanime.org/*',
+    '*://*.monoschinos2.com/*',
+    '*://*.animesonline.in/*',
+    '*://*.otakustv.com/*',
+    // ── Community anime — FR ────────────────────────────────────────────────────
+    '*://*.anime-sama.tv/*',
+    '*://*.franime.fr/*',
+    '*://*.french-anime.com/*',
+    '*://*.voiranime.com/*',
+    '*://*.otakufr.cc/*',
+    // ── Community anime — PL ────────────────────────────────────────────────────
+    '*://*.anime-odcinki.pl/*',
+    '*://*.frixysubs.pl/*',
+    '*://*.fumetsu.pl/*',
+    '*://*.docchi.pl/*',
+    '*://*.ogladajanime.pl/*',
+    '*://*.animezone.pl/*',
+    '*://*.desu-online.pl/*',
+    '*://*.shinden.pl/*',
+    // ── Community anime — TR ────────────────────────────────────────────────────
+    '*://*.turkanime.co/*',
+    '*://*.tranimeizle.net/*',
+    '*://*.anizm.net/*',
+    // ── Community anime — AR ────────────────────────────────────────────────────
+    '*://*.witanime.pics/*',
+    '*://*.okanime.tv/*',
+    // ── Community anime — RU/CIS ────────────────────────────────────────────────
+    '*://*.animego.me/*',
+    '*://*.v3.animelib.org/*',
+    '*://*.animebuff.ru/*',
+    '*://*.sovetromantica.com/*',
+    '*://*.animevost.org/*',
+    '*://*.smotret-anime.org/*',
+    '*://*.hdrezka.ag/*',
+    // ── Community anime — PT/BR ─────────────────────────────────────────────────
+    '*://*.betteranime.net/*',
+    '*://*.animefire.net/*',
+    '*://*.hinatasoul.com/*',
+    // ── Community anime — IT ────────────────────────────────────────────────────
+    '*://*.animeworld.tv/*',
+    '*://*.animeunity.it/*',
+    // ── Community anime — DE ────────────────────────────────────────────────────
+    '*://*.aniworld.to/*',
+    '*://*.bs.to/*',
+    // ── Community anime — JP/EN ─────────────────────────────────────────────────
+    '*://*.animelon.com/*',
+    // ── Community manga ─────────────────────────────────────────────────────────
     '*://*.mangabat.com/*',
     '*://*.mangakakalot.com/*',
     '*://*.chapmanganato.to/*',
     '*://*.tcbscans.com/*',
-    // Legal manga
+    '*://*.tcbonepiecechapters.com/*',
+    // ── Legal manga ─────────────────────────────────────────────────────────────
     '*://*.mangadex.org/*',
     '*://*.webtoons.com/*',
     '*://mangaplus.shueisha.co.jp/*',
-    // Community manga (Aidoku)
+    // ── Community manga (Aidoku) ─────────────────────────────────────────────────
     '*://*.promanga.net/*', '*://*.silentquill.net/*', '*://*.batcave.biz/*', '*://*.comix.to/*', '*://*.flamecomics.xyz/*', '*://*.flamecomics.com/*',
     '*://*.hivetoons.org/*', '*://*.manga.madokami.al/*', '*://*.magustoon.org/*', '*://*.mangabats.com/*', '*://*.mangadistrict.com/*', '*://*.mangago.me/*',
     '*://*.mangakakalot.gg/*', '*://*.manganato.gg/*', '*://*.nelomanga.net/*', '*://*.mangaread.org/*', '*://*.mangasect.net/*', '*://*.mangatx.cc/*',
     '*://*.manhuagold.top/*', '*://*.manhuaplus.org/*', '*://*.manhwax.top/*', '*://*.novelbuddy.com/*', '*://*.nyxscans.com/*', '*://*.qiscans.org/*',
-    '*://*.readcomiconline.li/*', '*://*.rizzfables.com/*', '*://*.tcbonepiecechapters.com/*', '*://*.toonily.com/*', '*://*.toonily.me/*', '*://*.vortexscans.org/*',
+    '*://*.readcomiconline.li/*', '*://*.rizzfables.com/*', '*://*.toonily.com/*', '*://*.toonily.me/*', '*://*.vortexscans.org/*',
     '*://*.webtoon.xyz/*', '*://*.weebcentral.com/*', '*://*.mangafire.to/*', '*://*.nhentai.net/*', '*://*.cubari.moe/*', '*://*.xbat.si/*',
     '*://*.kanzenin.info/*', '*://*.komiksin.net/*', '*://*.komiktap.info/*', '*://*.01.komiku.asia/*', '*://*.mangasusuku.com/*', '*://*.manhwalist02.site/*',
     '*://*.natsu.tv/*', '*://*.bigsolo.org/*', '*://*.sushiscan.net/*', '*://*.catharsisworld.dig-it.info/*', '*://*.eternalmangas.org/*', '*://*.flowermanga.net/*',
@@ -55,9 +146,10 @@ export default defineContentScript({
       } else if (msg.type === 'SHOW_MODAL') {
         const { modalType, data } = msg.payload;
         if (modalType === 'link') {
+          const isAnime = data.type === 'anime';
           overlays.showModal(
-            '📖 Track this manga?',
-            `<div><b>${data.title}</b> · Chapter ${data.progress}</div>`,
+            isAnime ? '🎬 Track this anime?' : '📖 Track this manga?',
+            `<div><b>${data.title}</b> · ${isAnime ? 'Episode' : 'Chapter'} ${data.progress}</div>`,
             () => chrome.runtime.sendMessage({ type: 'CONFIRM_TRACKING', payload: { platformKey: data.platformKey, confirmed: true } }),
             () => chrome.runtime.sendMessage({ type: 'CONFIRM_TRACKING', payload: { platformKey: data.platformKey, confirmed: false } })
           );
@@ -93,7 +185,7 @@ export default defineContentScript({
       overlays.setFab(detected, () => {
         const platformKey = `${detected.platform}:${detected.title.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')}`;
         chrome.runtime.sendMessage({ type: 'SYNC_PROGRESS', payload: { platformKey } });
-        overlays.showToast('Tsugi', `✓ Synced: ${detected.title} Ch.${detected.progress}`, 'success');
+        overlays.showToast('Tsugi', `✓ Synced: ${detected.title} ${detected.type === 'anime' ? 'Ep.' : 'Ch.'}${detected.progress}`, 'success');
         overlays.setFab(null, () => { }); // Hide after click
       });
     }
@@ -336,9 +428,9 @@ class OverlayManager {
         <span>Tsugi</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;flex:1;min-width:0">
-        <span style="opacity:0.6;font-size:10px;text-transform:uppercase;letter-spacing:0.06em">Currently Reading</span>
+        <span style="opacity:0.6;font-size:10px;text-transform:uppercase;letter-spacing:0.06em">${media.type === 'anime' ? 'Currently Watching' : 'Currently Reading'}</span>
         <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${media.title}</span>
-        <span style="font-size:11px;opacity:0.8;font-weight:600">Ch. ${media.progress}</span>
+        <span style="font-size:11px;opacity:0.8;font-weight:600">${media.type === 'anime' ? 'Ep.' : 'Ch.'} ${media.progress}</span>
       </div>
       <div class="close-btn" title="Dismiss">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>

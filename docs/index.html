@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tsugi — Your Universal Watchlist Tracker</title>
+    <meta name="description"
+        content="Tsugi is a browser extension that automatically tracks your anime, manga, movies, and TV progress across 90+ platforms and syncs to your favorite trackers." />
+    <meta property="og:title" content="Tsugi — Your Universal Watchlist Tracker" />
+    <meta property="og:description"
+        content="Track anime, manga, movies, and TV across 90+ platforms. Sync to MAL, AniList, Shikimori, Bangumi, and more." />
+    <meta property="og:type" content="website" />
+    <link rel="icon" type="image/svg+xml" href="app-icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+        href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap"
+        rel="stylesheet" />
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+
+    <!-- NAV -->
+    <header class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">
+                <img src="app-icon.svg" width="28" height="28" alt="Tsugi" />
+                <span class="nav-wordmark">Tsugi</span>
+                <span class="nav-kanji">次</span>
+            </a>
+            <nav class="nav-links">
+                <a href="#features">Features</a>
+                <a href="#platforms">Platforms</a>
+                <a href="#install">Install</a>
+                <a href="https://github.com/rachfiandj07/tsugi" target="_blank" rel="noopener" class="nav-gh">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                        <path
+                            d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                    </svg>
+                    GitHub
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- HERO: two-column, left text / right mockup -->
+    <section class="hero">
+        <div class="hero-bg">
+            <div class="orb orb-1"></div>
+            <div class="orb orb-2"></div>
+            <div class="orb orb-3"></div>
+            <div class="grid-overlay"></div>
+        </div>
+
+        <div class="container hero-inner">
+
+            <!-- Left: copy -->
+            <div class="hero-copy">
+                <div class="badge" data-aos>
+                    <span class="badge-dot"></span>
+                    Alpha · Early Access
+                </div>
+
+                <h1 data-aos data-aos-delay="80">
+                    One extension.<br />
+                    Every list.<br />
+                    <span class="gradient-text">Always in sync.</span>
+                </h1>
+
+                <p class="hero-sub" data-aos data-aos-delay="160">
+                    Tsugi is your universal watchlist companion. It silently detects
+                    what you're reading or watching — anime, manga, movies, TV — across
+                    <strong>90+ platforms</strong> and syncs your progress to your
+                    trackers automatically.
+                </p>
+
+                <div class="hero-actions" data-aos data-aos-delay="240">
+                    <a href="#install" class="btn-primary">
+                        Get Started
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7" />
+                        </svg>
+                    </a>
+                    <a href="https://github.com/rachfiandj07/tsugi" target="_blank" rel="noopener" class="btn-ghost">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor">
+                            <path
+                                d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+                        </svg>
+                        View Source
+                    </a>
+                </div>
+
+                <div class="hero-syncs" data-aos data-aos-delay="320">
+                    <span class="syncs-label">Syncs with</span>
+                    <div class="syncs-row">
+                        <div class="sync-chip mal">MAL</div>
+                        <div class="sync-chip anilist">AniList</div>
+                        <div class="sync-chip shikimori">Shikimori</div>
+                        <div class="sync-chip bangumi">Bangumi</div>
+                        <div class="sync-chip future">+ more soon</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: floating extension mockup -->
+            <div class="hero-mockup" data-aos data-aos-delay="200">
+                <div class="mockup-window">
+                    <div class="mockup-bar">
+                        <div class="mockup-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                        <div class="mockup-title">Tsugi</div>
+                    </div>
+                    <div class="mockup-body">
+                        <!-- Active card -->
+                        <div class="mockup-active">
+                            <div class="mockup-active-label">CURRENTLY READING</div>
+                            <div class="mockup-active-title">Berserk</div>
+                            <div class="mockup-active-sub">Chapter 364 · MangaDex</div>
+                            <div class="mockup-active-actions">
+                                <div class="mockup-btn accent">Sync to MAL</div>
+                                <div class="mockup-btn ghost">Link</div>
+                            </div>
+                        </div>
+
+                        <div class="mockup-section-label">YOUR LIST</div>
+
+                        <div class="mockup-list">
+                            <div class="mockup-item">
+                                <div class="mockup-dot green"></div>
+                                <div class="mockup-item-info">
+                                    <div class="mockup-item-name">One Piece</div>
+                                    <div class="mockup-item-meta">Ch. 1100 · Manga</div>
+                                </div>
+                                <div class="mockup-badge reading">Reading</div>
+                            </div>
+                            <div class="mockup-item">
+                                <div class="mockup-dot purple"></div>
+                                <div class="mockup-item-info">
+                                    <div class="mockup-item-name">Attack on Titan</div>
+                                    <div class="mockup-item-meta">Ep. 87 · Crunchyroll</div>
+                                </div>
+                                <div class="mockup-badge reading">Watching</div>
+                            </div>
+                            <div class="mockup-item">
+                                <div class="mockup-dot blue"></div>
+                                <div class="mockup-item-info">
+                                    <div class="mockup-item-name">Dune: Part Two</div>
+                                    <div class="mockup-item-meta">Movie · Letterboxd</div>
+                                </div>
+                                <div class="mockup-badge soon">Soon</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Floating pill -->
+                <div class="mockup-pill">
+                    <div class="pill-dot"></div>
+                    ✓ Synced to AniList
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <div class="stats-bar">
+        <div class="container stats-inner">
+            <div class="stat">
+                <div class="stat-num">90+</div>
+                <div class="stat-label">Supported Platforms</div>
+            </div>
+            <div class="stat-sep"></div>
+            <div class="stat">
+                <div class="stat-num">4</div>
+                <div class="stat-label">Tracker Integrations</div>
+            </div>
+            <div class="stat-sep"></div>
+            <div class="stat">
+                <div class="stat-num">0</div>
+                <div class="stat-label">Background Requests</div>
+            </div>
+            <div class="stat-sep"></div>
+            <div class="stat">
+                <div class="stat-num">100%</div>
+                <div class="stat-label">Local Data Storage</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FEATURES -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <div>
+                    <div class="eyebrow">Features</div>
+                    <h2>Built to stay out of your way.</h2>
+                </div>
+                <p class="section-desc">
+                    Every feature is designed to be invisible until you need it —
+                    tracking your progress silently, syncing reliably, and never
+                    interrupting your watch or read session.
+                </p>
+            </div>
+
+            <div class="features-grid">
+
+                <div class="feat-card feat-wide" data-aos>
+                    <div class="feat-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="11" cy="11" r="8" />
+                            <path d="m21 21-4.35-4.35" />
+                        </svg>
+                    </div>
+                    <h3>Universal Auto Detection</h3>
+                    <p>Tsugi silently identifies what you're watching or reading — anime, manga, movies, TV shows —
+                        across 90+ platforms. No manual input, no popups, no friction.</p>
+                    <div class="feat-chips">
+                        <span>Anime</span><span>Manga</span><span>Movies</span><span>TV</span>
+                    </div>
+                </div>
+
+                <div class="feat-card feat-wide" data-aos data-aos-delay="80">
+                    <div class="feat-icon">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M21 2v6h-6" />
+                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+                            <path d="M3 22v-6h6" />
+                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+                        </svg>
+                    </div>
+                    <h3>Cross-Platform Sync</h3>
+                    <p>One-click sync to MAL, AniList, Shikimori, and Bangumi. Forward-only logic ensures your progress
+                        never accidentally regresses. Letterboxd and Trakt coming soon.</p>
+                    <div class="feat-chips">
+                        <span>MAL</span><span>AniList</span><span>Shikimori</span><span>Bangumi</span>
+                    </div>
+                </div>
+
+                <div class="feat-card" data-aos>
+                    <div class="feat-icon sm">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                        </svg>
+                    </div>
+                    <h3>Seamless Linking</h3>
+                    <p>Link any detected title to its tracker entry in one click. Progress tracked before linking is
+                        preserved and synced on first link.</p>
+                </div>
+
+                <div class="feat-card" data-aos data-aos-delay="60">
+                    <div class="feat-icon sm">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="18" height="18" x="3" y="3" rx="2" />
+                            <path d="M3 9h18M9 21V9" />
+                        </svg>
+                    </div>
+                    <h3>Status Management</h3>
+                    <p>Update Reading, Watching, Completed, On-Hold, or Dropped status directly from the popup — no tab
+                        switching needed.</p>
+                </div>
+
+                <div class="feat-card" data-aos data-aos-delay="120">
+                    <div class="feat-icon sm">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
+                        </svg>
+                    </div>
+                    <h3>Lightweight</h3>
+                    <p>Zero background polling. Tsugi only activates when you're on a supported page, keeping your
+                        browser fast and your battery happy.</p>
+                </div>
+
+                <div class="feat-card" data-aos data-aos-delay="180">
+                    <div class="feat-icon sm">
+                        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                            stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                            <rect width="11" height="11" x="3" y="11" rx="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                    </div>
+                    <h3>Privacy First</h3>
+                    <p>All data stays local in your browser. Tsugi never sends your history to any third-party server —
+                        only to the trackers you explicitly connect.</p>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- PLATFORMS / TRACKERS -->
+    <section class="section section-alt" id="platforms">
+        <div class="container">
+            <div class="section-header">
+                <div>
+                    <div class="eyebrow">Integrations</div>
+                    <h2>Works with your trackers.</h2>
+                </div>
+                <p class="section-desc">
+                    Connect once via OAuth. Tsugi handles token refresh automatically
+                    and keeps your lists in sync — whether you're tracking anime, manga,
+                    or movies.
+                </p>
+            </div>
+
+            <div class="trackers-grid">
+
+                <div class="tracker-card" data-aos>
+                    <div class="tracker-logo mal">MAL</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">MyAnimeList</div>
+                        <div class="tracker-type">Anime &amp; Manga</div>
+                    </div>
+                    <div class="tracker-status live"><span class="live-dot"></span>Live</div>
+                </div>
+
+                <div class="tracker-card" data-aos data-aos-delay="50">
+                    <div class="tracker-logo anilist">AL</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">AniList</div>
+                        <div class="tracker-type">Anime &amp; Manga</div>
+                    </div>
+                    <div class="tracker-status live"><span class="live-dot"></span>Live</div>
+                </div>
+
+                <div class="tracker-card" data-aos data-aos-delay="100">
+                    <div class="tracker-logo shikimori">Sh</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Shikimori</div>
+                        <div class="tracker-type">Anime &amp; Manga</div>
+                    </div>
+                    <div class="tracker-status live"><span class="live-dot"></span>Live</div>
+                </div>
+
+                <div class="tracker-card" data-aos data-aos-delay="150">
+                    <div class="tracker-logo bangumi">Bg</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Bangumi</div>
+                        <div class="tracker-type">Anime &amp; Manga</div>
+                    </div>
+                    <div class="tracker-status live"><span class="live-dot"></span>Live</div>
+                </div>
+
+                <div class="tracker-card dim" data-aos data-aos-delay="200">
+                    <div class="tracker-logo future">Lb</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Letterboxd</div>
+                        <div class="tracker-type">Movies &amp; TV</div>
+                    </div>
+                    <div class="tracker-status soon">Soon</div>
+                </div>
+
+                <div class="tracker-card dim" data-aos data-aos-delay="250">
+                    <div class="tracker-logo future">Tr</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Trakt</div>
+                        <div class="tracker-type">Movies &amp; TV</div>
+                    </div>
+                    <div class="tracker-status soon">Soon</div>
+                </div>
+
+                <div class="tracker-card dim" data-aos data-aos-delay="300">
+                    <div class="tracker-logo future">Gr</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">Goodreads</div>
+                        <div class="tracker-type">Books &amp; Novels</div>
+                    </div>
+                    <div class="tracker-status soon">Soon</div>
+                </div>
+
+                <div class="tracker-card dim" data-aos data-aos-delay="350">
+                    <div class="tracker-logo future">+</div>
+                    <div class="tracker-info">
+                        <div class="tracker-name">More coming</div>
+                        <div class="tracker-type">Community driven</div>
+                    </div>
+                    <div class="tracker-status soon">Planned</div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <!-- SUPPORTED PLATFORMS (Anime + Manga chips) -->
+    <section class="section" id="supported-platforms">
+        <div class="container">
+            <div class="section-header">
+                <div>
+                    <div class="eyebrow">Source Sites</div>
+                    <h2>Where Tsugi listens.</h2>
+                </div>
+                <p class="section-desc">
+                    Tsugi detects your progress across 90+ anime and manga platforms —
+                    from global legal streams to community fansub sites in 10+ languages.
+                </p>
+            </div>
+
+            <!-- Tabs -->
+            <div class="platform-tabs" role="tablist">
+                <button class="ptab active" role="tab" id="ptab-anime" aria-controls="ppanel-anime"
+                    aria-selected="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polygon points="5 3 19 12 5 21 5 3" />
+                    </svg>
+                    Anime
+                </button>
+                <button class="ptab" role="tab" id="ptab-manga" aria-controls="ppanel-manga" aria-selected="false">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+                        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+                    </svg>
+                    Manga
+                </button>
+            </div>
+
+            <!-- ANIME PANEL -->
+            <div class="ppanel active" id="ppanel-anime" role="tabpanel" aria-labelledby="ptab-anime">
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge legal">Official</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip legal" href="https://www.crunchyroll.com" target="_blank"
+                            rel="noopener">Crunchyroll</a>
+                        <a class="pchip legal" href="https://www.netflix.com" target="_blank" rel="noopener">Netflix</a>
+                        <a class="pchip legal" href="https://www.hidive.com" target="_blank" rel="noopener">HIDIVE</a>
+                        <a class="pchip legal" href="https://www.hulu.com" target="_blank" rel="noopener">Hulu</a>
+                        <a class="pchip legal" href="https://www.animationdigitalnetwork.com" target="_blank"
+                            rel="noopener">ADN</a>
+                        <a class="pchip legal" href="https://www.animeonegai.com" target="_blank"
+                            rel="noopener">AnimeOnegai</a>
+                        <a class="pchip legal" href="https://www.animeonsen.xyz" target="_blank"
+                            rel="noopener">AnimeOnsen</a>
+                        <a class="pchip legal" href="https://www.bilibili.tv" target="_blank"
+                            rel="noopener">BStation</a>
+                        <a class="pchip legal" href="https://www.proxer.me" target="_blank" rel="noopener">Proxer</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; Global</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://zoro.to" target="_blank" rel="noopener">Zoro</a>
+                        <a class="pchip" href="https://hianime.to" target="_blank" rel="noopener">HiAnime</a>
+                        <a class="pchip" href="https://9anime.to" target="_blank" rel="noopener">9anime</a>
+                        <a class="pchip" href="https://anicrush.to" target="_blank" rel="noopener">AniCrush</a>
+                        <a class="pchip" href="https://an1me.to" target="_blank" rel="noopener">An1me</a>
+                        <a class="pchip" href="https://anigo.to" target="_blank" rel="noopener">AniGo</a>
+                        <a class="pchip" href="https://aninexus.to" target="_blank" rel="noopener">AniNexus</a>
+                        <a class="pchip" href="https://anixl.to" target="_blank" rel="noopener">AniXL</a>
+                        <a class="pchip" href="https://kuudere.to" target="_blank" rel="noopener">Kuudere</a>
+                        <a class="pchip" href="https://miruro.to" target="_blank" rel="noopener">Miruro</a>
+                        <a class="pchip" href="https://anidream.cc" target="_blank" rel="noopener">AniDream</a>
+                        <a class="pchip" href="https://anoboye.com" target="_blank" rel="noopener">AnoBoye</a>
+                        <a class="pchip" href="https://animekai.to" target="_blank" rel="noopener">AnimeKAI</a>
+                        <a class="pchip" href="https://animesuge.to" target="_blank" rel="noopener">AnimeSuge</a>
+                        <a class="pchip" href="https://kickassanime.am" target="_blank" rel="noopener">KickAssAnime</a>
+                        <a class="pchip" href="https://gogoanime.me" target="_blank" rel="noopener">Gogoanime</a>
+                        <a class="pchip" href="https://animeheaven.me" target="_blank" rel="noopener">AnimeHeaven</a>
+                        <a class="pchip" href="https://animeid.tv" target="_blank" rel="noopener">AnimeID</a>
+                        <a class="pchip" href="https://animekhor.org" target="_blank" rel="noopener">AnimeKhor</a>
+                        <a class="pchip" href="https://animeko.co" target="_blank" rel="noopener">AnimeKO</a>
+                        <a class="pchip" href="https://animenosub.to" target="_blank" rel="noopener">AnimeNoSub</a>
+                        <a class="pchip" href="https://animetoast.cc" target="_blank" rel="noopener">AnimeToast</a>
+                        <a class="pchip" href="https://animewho.com" target="_blank" rel="noopener">AnimeWho</a>
+                        <a class="pchip" href="https://animexin.vip" target="_blank" rel="noopener">AnimeXin</a>
+                        <a class="pchip" href="https://animeav1.com" target="_blank" rel="noopener">AnimeAv1</a>
+                        <a class="pchip" href="https://animepahe.com" target="_blank" rel="noopener">AnimePahe</a>
+                        <a class="pchip" href="https://animelon.com" target="_blank" rel="noopener">Animelon</a>
+                        <a class="pchip" href="https://aniyan.net" target="_blank" rel="noopener">AniYan</a>
+                        <a class="pchip" href="https://anizium.co" target="_blank" rel="noopener">AniZium</a>
+                        <a class="pchip" href="https://fireani.me" target="_blank" rel="noopener">FireAnime</a>
+                        <a class="pchip" href="https://animetsu.net" target="_blank" rel="noopener">Gojo</a>
+                        <a class="pchip" href="https://kaguya.app" target="_blank" rel="noopener">Kaguya</a>
+                        <a class="pchip" href="https://luciferdonghua.in" target="_blank"
+                            rel="noopener">LuciferDonghua</a>
+                        <a class="pchip" href="https://moeclip.com" target="_blank" rel="noopener">MoeClip</a>
+                        <a class="pchip" href="https://adkami.com" target="_blank" rel="noopener">ADKami</a>
+                        <a class="pchip" href="https://toonanime.cc" target="_blank" rel="noopener">ToonAnime</a>
+                        <a class="pchip" href="https://topanimes.net" target="_blank" rel="noopener">TopAnimes</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; ES / LATAM</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://animeflv.net" target="_blank" rel="noopener">AnimeFLV</a>
+                        <a class="pchip" href="https://jkanime.net" target="_blank" rel="noopener">JKAnime</a>
+                        <a class="pchip" href="https://tioanime.com" target="_blank" rel="noopener">TioAnime</a>
+                        <a class="pchip" href="https://latanime.org" target="_blank" rel="noopener">Latanime</a>
+                        <a class="pchip" href="https://monoschinos2.com" target="_blank" rel="noopener">MonosChinos</a>
+                        <a class="pchip" href="https://animesonline.in" target="_blank" rel="noopener">AnimesOnline</a>
+                        <a class="pchip" href="https://otakustv.com" target="_blank" rel="noopener">OtakusTV</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; FR</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://anime-sama.tv" target="_blank" rel="noopener">AnimeSama</a>
+                        <a class="pchip" href="https://franime.fr" target="_blank" rel="noopener">FRAnime</a>
+                        <a class="pchip" href="https://french-anime.com" target="_blank" rel="noopener">FrenchAnime</a>
+                        <a class="pchip" href="https://voiranime.com" target="_blank" rel="noopener">VoirAnime</a>
+                        <a class="pchip" href="https://otakufr.cc" target="_blank" rel="noopener">OtakuFR</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; PL</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://anime-odcinki.pl" target="_blank" rel="noopener">AnimeOdcinki</a>
+                        <a class="pchip" href="https://frixysubs.pl" target="_blank" rel="noopener">FrixySubs</a>
+                        <a class="pchip" href="https://fumetsu.pl" target="_blank" rel="noopener">Fumetsu</a>
+                        <a class="pchip" href="https://docchi.pl" target="_blank" rel="noopener">Docchi</a>
+                        <a class="pchip" href="https://ogladajanime.pl" target="_blank" rel="noopener">OgladajAnime</a>
+                        <a class="pchip" href="https://animezone.pl" target="_blank" rel="noopener">AnimeZone</a>
+                        <a class="pchip" href="https://desu-online.pl" target="_blank" rel="noopener">DesuOnline</a>
+                        <a class="pchip" href="https://shinden.pl" target="_blank" rel="noopener">Shinden</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; TR</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://turkanime.co" target="_blank" rel="noopener">TurkAnime</a>
+                        <a class="pchip" href="https://tranimeizle.net" target="_blank" rel="noopener">TRAnimeizle</a>
+                        <a class="pchip" href="https://anizm.net" target="_blank" rel="noopener">Anizm</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; AR</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://witanime.pics" target="_blank" rel="noopener">WitAnime</a>
+                        <a class="pchip" href="https://okanime.tv" target="_blank" rel="noopener">OkAnime</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; RU / CIS</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://animego.me" target="_blank" rel="noopener">AnimeGO</a>
+                        <a class="pchip" href="https://animelib.org" target="_blank" rel="noopener">AnimeLib</a>
+                        <a class="pchip" href="https://animebuff.ru" target="_blank" rel="noopener">AnimeBuff</a>
+                        <a class="pchip" href="https://sovetromantica.com" target="_blank"
+                            rel="noopener">SovetRomantica</a>
+                        <a class="pchip" href="https://animevost.org" target="_blank" rel="noopener">AnimeVost</a>
+                        <a class="pchip" href="https://smotret-anime.org" target="_blank" rel="noopener">Anime365</a>
+                        <a class="pchip" href="https://hdrezka.ag" target="_blank" rel="noopener">HdRezka</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; PT / BR</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://betteranime.net" target="_blank" rel="noopener">BetterAnime</a>
+                        <a class="pchip" href="https://animefire.net" target="_blank" rel="noopener">AnimeFire</a>
+                        <a class="pchip" href="https://hinatasoul.com" target="_blank" rel="noopener">HinataSoul</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; IT</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://animeworld.tv" target="_blank" rel="noopener">AnimeWorld</a>
+                        <a class="pchip" href="https://animeunity.it" target="_blank" rel="noopener">AnimeUnity</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; DE</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://aniworld.to" target="_blank" rel="noopener">AniWorld</a>
+                        <a class="pchip" href="https://bs.to" target="_blank" rel="noopener">Bs.to</a>
+                    </div>
+                </div>
+
+            </div><!-- /ppanel-anime -->
+
+            <!-- MANGA PANEL -->
+            <div class="ppanel" id="ppanel-manga" role="tabpanel" aria-labelledby="ptab-manga">
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge legal">Official</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip legal" href="https://mangadex.org" target="_blank" rel="noopener">MangaDex</a>
+                        <a class="pchip legal" href="https://www.webtoons.com" target="_blank"
+                            rel="noopener">Webtoon</a>
+                        <a class="pchip legal" href="https://mangaplus.shueisha.co.jp" target="_blank"
+                            rel="noopener">Manga Plus</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; Global / EN</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://mangabat.com" target="_blank" rel="noopener">MangaBat</a>
+                        <a class="pchip" href="https://mangakakalot.com" target="_blank" rel="noopener">Mangakakalot</a>
+                        <a class="pchip" href="https://tcbscans.me" target="_blank" rel="noopener">TCB Scans</a>
+                        <a class="pchip" href="https://mangasee123.com" target="_blank" rel="noopener">MangaSee</a>
+                        <a class="pchip" href="https://bato.to" target="_blank" rel="noopener">Bato.to</a>
+                        <a class="pchip" href="https://asuracomic.net" target="_blank" rel="noopener">Asura Scans</a>
+                        <a class="pchip" href="https://flamecomics.com" target="_blank" rel="noopener">Flame Comics</a>
+                        <a class="pchip" href="https://mangafire.to" target="_blank" rel="noopener">MangaFire</a>
+                        <a class="pchip" href="https://mangapark.net" target="_blank" rel="noopener">MangaPark</a>
+                        <a class="pchip" href="https://mangabuddy.com" target="_blank" rel="noopener">MangaBuddy</a>
+                        <a class="pchip" href="https://cubari.moe" target="_blank" rel="noopener">Cubari</a>
+                        <a class="pchip" href="https://toonily.com" target="_blank" rel="noopener">Toonily</a>
+                        <a class="pchip" href="https://weebcentral.com" target="_blank" rel="noopener">WeebCentral</a>
+                        <a class="pchip" href="https://mangago.me" target="_blank" rel="noopener">MangaGo</a>
+                        <a class="pchip" href="https://mangaread.org" target="_blank" rel="noopener">MangaRead</a>
+                        <a class="pchip" href="https://readm.org" target="_blank" rel="noopener">ReadM</a>
+                        <a class="pchip" href="https://guya.moe" target="_blank" rel="noopener">Guya.moe</a>
+                        <a class="pchip" href="https://dynastyscans.com" target="_blank" rel="noopener">Dynasty
+                            Scans</a>
+                        <a class="pchip" href="https://mangakakalot.gg" target="_blank"
+                            rel="noopener">Mangakakalot.gg</a>
+                        <a class="pchip" href="https://manganato.gg" target="_blank" rel="noopener">Manganato</a>
+                        <a class="pchip" href="https://mangatx.cc" target="_blank" rel="noopener">MangaTX</a>
+                        <a class="pchip" href="https://mangasect.net" target="_blank" rel="noopener">MangaSect</a>
+                        <a class="pchip" href="https://mangadistrict.com" target="_blank"
+                            rel="noopener">MangaDistrict</a>
+                        <a class="pchip" href="https://mangabats.com" target="_blank" rel="noopener">MangaBats</a>
+                        <a class="pchip" href="https://nyxscans.com" target="_blank" rel="noopener">NyxScans</a>
+                        <a class="pchip" href="https://vortexscans.org" target="_blank" rel="noopener">VortexScans</a>
+                        <a class="pchip" href="https://rizzfables.com" target="_blank" rel="noopener">RizzFables</a>
+                        <a class="pchip" href="https://qiscans.org" target="_blank" rel="noopener">QiScans</a>
+                        <a class="pchip" href="https://webtoon.xyz" target="_blank" rel="noopener">Webtoon.xyz</a>
+                        <a class="pchip" href="https://copymanga.site" target="_blank" rel="noopener">CopyManga</a>
+                        <a class="pchip" href="https://novelbuddy.com" target="_blank" rel="noopener">NovelBuddy</a>
+                        <a class="pchip" href="https://readcomiconline.li" target="_blank"
+                            rel="noopener">ReadComicOnline</a>
+                        <a class="pchip" href="https://manhuaplus.org" target="_blank" rel="noopener">ManhuaPlus</a>
+                        <a class="pchip" href="https://manhuagold.top" target="_blank" rel="noopener">ManhuaGold</a>
+                        <a class="pchip" href="https://manhwax.top" target="_blank" rel="noopener">ManhwaX</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; Regional (ID / FR / ES / RU / JA)</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://komiku.asia" target="_blank" rel="noopener">Komiku</a>
+                        <a class="pchip" href="https://komiksin.net" target="_blank" rel="noopener">KomikSin</a>
+                        <a class="pchip" href="https://komiktap.info" target="_blank" rel="noopener">KomikTap</a>
+                        <a class="pchip" href="https://mangasusuku.com" target="_blank" rel="noopener">MangaSusuku</a>
+                        <a class="pchip" href="https://sushiscan.net" target="_blank" rel="noopener">SushiScan</a>
+                        <a class="pchip" href="https://eternalmangas.org" target="_blank"
+                            rel="noopener">EternalMangas</a>
+                        <a class="pchip" href="https://flowermanga.net" target="_blank" rel="noopener">FlowerManga</a>
+                        <a class="pchip" href="https://mangalib.me" target="_blank" rel="noopener">MangaLib</a>
+                        <a class="pchip" href="https://ranobelib.me" target="_blank" rel="noopener">RanobeLib</a>
+                        <a class="pchip" href="https://hentailib.me" target="_blank" rel="noopener">HentaiLib</a>
+                        <a class="pchip" href="https://shonenjumpplus.com" target="_blank" rel="noopener">Shonen
+                            Jump+</a>
+                        <a class="pchip" href="https://comic-days.com" target="_blank" rel="noopener">Comic Days</a>
+                        <a class="pchip" href="https://manga.nicovideo.jp" target="_blank" rel="noopener">Niconico
+                            Manga</a>
+                        <a class="pchip" href="https://rawkuma.net" target="_blank" rel="noopener">RawKuma</a>
+                        <a class="pchip" href="https://rawkuro.net" target="_blank" rel="noopener">RawKuro</a>
+                    </div>
+                </div>
+
+                <div class="platform-group">
+                    <div class="platform-group-label">
+                        <span class="pgbadge community">Community &nbsp;·&nbsp; CN / VN</span>
+                    </div>
+                    <div class="platform-chips">
+                        <a class="pchip" href="https://happymh.com" target="_blank" rel="noopener">HappyMH</a>
+                        <a class="pchip" href="https://manhuagui.com" target="_blank" rel="noopener">ManhuaGui</a>
+                        <a class="pchip" href="https://mangabz.com" target="_blank" rel="noopener">MangaBZ</a>
+                        <a class="pchip" href="https://baozimh.com" target="_blank" rel="noopener">BaoziMH</a>
+                        <a class="pchip" href="https://bilimanga.net" target="_blank" rel="noopener">BiliManga</a>
+                        <a class="pchip" href="https://godamh.com" target="_blank" rel="noopener">GodaMH</a>
+                        <a class="pchip" href="https://cuutruyen.net" target="_blank" rel="noopener">CuuTruyen</a>
+                        <a class="pchip" href="https://nettruyenviet1.com" target="_blank" rel="noopener">NetTruyen</a>
+                    </div>
+                </div>
+
+            </div><!-- /ppanel-manga -->
+
+        </div>
+    </section>
+
+    <!-- INSTALL -->
+    <section class="section" id="install">
+        <div class="container install-layout">
+
+            <div class="install-copy">
+                <div class="eyebrow">Installation</div>
+                <h2>Up and running<br />in minutes.</h2>
+                <p class="install-desc">
+                    Tsugi is not yet on extension stores. Install it from source —
+                    it only takes a few steps.
+                </p>
+                <a href="https://github.com/rachfiandj07/tsugi" target="_blank" rel="noopener" class="btn-primary">
+                    View on GitHub
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M5 12h14M12 5l7 7-7 7" />
+                    </svg>
+                </a>
+            </div>
+
+            <div class="install-steps">
+                <div class="step" data-aos>
+                    <div class="step-num">01</div>
+                    <div class="step-body">
+                        <h3>Clone the repository</h3>
+                        <div class="code-block">
+                            <code>git clone https://github.com/rachfiandj07/tsugi.git</code>
+                            <button class="copy-btn" data-copy="git clone https://github.com/rachfiandj07/tsugi.git"
+                                title="Copy">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step" data-aos data-aos-delay="60">
+                    <div class="step-num">02</div>
+                    <div class="step-body">
+                        <h3>Install dependencies</h3>
+                        <div class="code-block">
+                            <code>pnpm install</code>
+                            <button class="copy-btn" data-copy="pnpm install" title="Copy">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step" data-aos data-aos-delay="120">
+                    <div class="step-num">03</div>
+                    <div class="step-body">
+                        <h3>Add API credentials</h3>
+                        <p>Copy <code class="ic">.env.example</code> to <code class="ic">.env</code> and fill in your
+                            tracker API keys.</p>
+                    </div>
+                </div>
+
+                <div class="step" data-aos data-aos-delay="180">
+                    <div class="step-num">04</div>
+                    <div class="step-body">
+                        <h3>Build &amp; load</h3>
+                        <div class="code-block">
+                            <code>pnpm build</code>
+                            <button class="copy-btn" data-copy="pnpm build" title="Copy">
+                                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
+                                    <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
+                                </svg>
+                            </button>
+                        </div>
+                        <p>Load <code class="ic">.output/chrome-mv3</code> as an unpacked extension in Chrome.</p>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div class="container footer-inner">
+            <div class="footer-brand">
+                <img src="app-icon.svg" width="22" height="22" alt="Tsugi" />
+                <span>Tsugi <span class="footer-kanji">次</span></span>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/rachfiandj07/tsugi" target="_blank" rel="noopener">GitHub</a>
+                <a href="https://github.com/rachfiandj07/tsugi/blob/master/CONTRIBUTING.md" target="_blank"
+                    rel="noopener">Contributing</a>
+                <a href="https://github.com/rachfiandj07/tsugi/issues" target="_blank" rel="noopener">Issues</a>
+            </div>
+            <div class="footer-copy">GPL-3.0 · Made for the community</div>
+        </div>
+    </footer>
+
+    <script>
+        // Scroll-triggered fade-in
+        const io = new IntersectionObserver((entries) => {
+            entries.forEach(e => {
+                if (e.isIntersecting) {
+                    const d = +(e.target.dataset.aosDelay || 0);
+                    setTimeout(() => e.target.classList.add('in'), d);
+                    io.unobserve(e.target);
+                }
+            });
+        }, { threshold: 0.1 });
+        document.querySelectorAll('[data-aos]').forEach(el => io.observe(el));
+
+        // Nav scroll state
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 24);
+        }, { passive: true });
+
+        // Copy buttons
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                navigator.clipboard.writeText(btn.dataset.copy || '');
+                btn.classList.add('copied');
+                setTimeout(() => btn.classList.remove('copied'), 1600);
+            });
+        });
+
+        // Platform tab switching
+        document.querySelectorAll('.ptab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const panelId = tab.getAttribute('aria-controls');
+                // Deactivate all
+                document.querySelectorAll('.ptab').forEach(t => {
+                    t.classList.remove('active');
+                    t.setAttribute('aria-selected', 'false');
+                });
+                document.querySelectorAll('.ppanel').forEach(p => p.classList.remove('active'));
+                // Activate clicked
+                tab.classList.add('active');
+                tab.setAttribute('aria-selected', 'true');
+                document.getElementById(panelId)?.classList.add('active');
+            });
+        });
+    </script>
+</body>
+
+</html>

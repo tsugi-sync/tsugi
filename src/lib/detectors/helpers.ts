@@ -26,7 +26,10 @@ export function make(platform: PlatformType, title: string, progress: number, ty
 export function cleanTitle(title: string): string {
     if (!title) return '';
     return title
-        .replace(/\s*[|:-].*$/, '') // Remove site suffixes
+        // Only strip suffix after | – — if it looks like a site name / boilerplate
+        .replace(/\s*[|]\s*(?:Watch|Read|Free|Online|HD|Sub|Dub|Streaming|Anime|Manga|Episode|Ep).*$/i, '')
+        .replace(/\s*[-–—]\s*(?:Watch|Read|Free|Online|HD|Sub|Dub|Streaming|Episode|Ep)\s.*$/i, '')
+        // Strip chapter/episode progress labels at end
         .replace(/\s+(?:Chapter|Ch|Ep|Episode|Vol|Volume)\s*\d+.*$/i, '')
         .replace(/\s+Read\s+Online.*$/i, '')
         .trim();
@@ -50,6 +53,21 @@ export function isReadingManga(): boolean {
 }
 
 export function isWatchingAnime(): boolean {
-    const player = document.querySelector('video, iframe, #player, .player, #video-player, .video-content');
-    return !!player;
+    // 1. Explicit player element already in DOM (most reliable)
+    if (document.querySelector(
+        'video, iframe[src*="player"], iframe[src*="embed"], ' +
+        '#player, .player, #video-player, .video-content, ' +
+        '.video-js, .jw-video, [class*="player-container"], [id*="player"]'
+    )) return true;
+
+    // 2. URL strongly suggests a watch/episode page (handles SPAs before player loads)
+    const url = location.href;
+    if (/\/watch\//i.test(url)) return true;
+    if (/\/episode\//i.test(url)) return true;
+    if (/[?&]ep=\d/i.test(url)) return true;
+    if (/-episode-\d/i.test(url)) return true;
+    if (/\/ep\//i.test(url)) return true;
+    if (/\/stream\//i.test(url)) return true;
+
+    return false;
 }

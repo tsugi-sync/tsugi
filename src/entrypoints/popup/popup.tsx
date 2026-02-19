@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createRoot } from 'react-dom/client';
+import { isOfficial, getPlatformLabel } from '@/lib/utils/platforms';
 import type { TrackerEntry, TrackerType, AppSettings, TrackedItem, PlatformType, MediaType, MediaStatus, MessageResponse, AidokuSource } from '@/lib/types';
-import { PLATFORM_LABELS, ANIME_PLATFORMS, MANGA_PLATFORMS } from '@/lib/migrations/index';
+import { ANIME_PLATFORMS, MANGA_PLATFORMS } from '@/lib/migrations/index';
 import { slugify } from '@/lib/utils/storage';
 
 // ─── Messaging ────────────────────────────────────────────────────────────────
@@ -211,10 +212,11 @@ function LoginView({ settings, onBack, onAuthSuccess }: {
 
 // ─── Search View ──────────────────────────────────────────────────────────────
 
-function SearchView({ settings, platformKey, initialQuery, onBack }: {
+function SearchView({ settings, platformKey, initialQuery, initialMediaType, onBack }: {
   settings: AppSettings;
   platformKey: string | null;
   initialQuery: string | null;
+  initialMediaType?: MediaType;
   onBack: () => void;
 }) {
   const [query, setQuery] = useState(initialQuery ?? '');
@@ -223,8 +225,8 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
   const [tracker, setTracker] = useState<TrackerType>(
     settings.defaultTracker ?? settings.activeTrackers[0] ?? 'mal'
   );
-  const [mediaType, setMediaType] = useState<MediaType>('manga');
-  const [status, setStatus] = useState<MediaStatus>('reading');
+  const [mediaType, setMediaType] = useState<MediaType>(initialMediaType ?? 'manga');
+  const [status, setStatus] = useState<MediaStatus>((initialMediaType ?? 'manga') === 'anime' ? 'watching' : 'reading');
 
   const authedTrackers = settings.activeTrackers.filter(t => !!settings.auth[t]);
 
@@ -281,7 +283,10 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
 
         <div className="pill-list" style={{ padding: '0 0 8px' }}>
           {(['anime', 'manga'] as MediaType[]).map(t => (
-            <button key={t} onClick={() => setMediaType(t)}
+            <button key={t} onClick={() => {
+              setMediaType(t);
+              setStatus(t === 'anime' ? 'watching' : 'reading');
+            }}
               className={`search-pill ${mediaType === t ? 'active' : ''}`}>
               {t === 'anime' ? '▶ Anime' : '📖 Manga'}
             </button>
@@ -302,17 +307,16 @@ function SearchView({ settings, platformKey, initialQuery, onBack }: {
 
         <div className="status-text" style={{ padding: '4px 0 8px' }}>INITIAL STATUS:</div>
         <div className="pill-list" style={{ padding: '0 0 12px' }}>
-          {(['watching', 'reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'] as MediaStatus[]).map(s => {
-            if (mediaType === 'manga' && s === 'watching') return null;
-            if (mediaType === 'anime' && s === 'reading') return null;
-            return (
-              <button key={s} onClick={() => setStatus(s)}
-                className={`search-pill ${status === s ? 'active' : ''}`}
-                style={{ fontSize: 10, padding: '4px 8px' }}>
-                {s.toUpperCase().replace(/_/g, ' ')}
-              </button>
-            );
-          })}
+          {(mediaType === 'anime'
+            ? ['watching', 'completed', 'on_hold', 'dropped', 'plan_to_watch'] as MediaStatus[]
+            : ['reading', 'completed', 'on_hold', 'dropped', 'plan_to_read'] as MediaStatus[]
+          ).map(s => (
+            <button key={s} onClick={() => setStatus(s)}
+              className={`search-pill ${status === s ? 'active' : ''}`}
+              style={{ fontSize: 10, padding: '4px 8px' }}>
+              {s.toUpperCase().replace(/_/g, ' ')}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -381,7 +385,7 @@ function MigrateView({ item, onBack, onDone }: {
           <div className="pipeline-node faded">
             <div className="status-text" style={{ marginBottom: 4, textTransform: 'uppercase' }}>Source</div>
             <div className="track-title">{item.platformTitle}</div>
-            <div className="status-text">{PLATFORM_LABELS[item.platform]}</div>
+            <div className="status-text">{getPlatformLabel(item.platform)}</div>
           </div>
           <div className="pipeline-connector">⇄</div>
           <div className="pipeline-node">
@@ -395,7 +399,7 @@ function MigrateView({ item, onBack, onDone }: {
               {(item.type === 'anime' ? ANIME_PLATFORMS : MANGA_PLATFORMS)
                 .filter(p => p !== item.platform)
                 .map(p => (
-                  <option key={p} value={p}>{PLATFORM_LABELS[p]}</option>
+                  <option key={p} value={p}>{getPlatformLabel(p)}</option>
                 ))}
             </select>
           </div>
@@ -553,16 +557,57 @@ function HomeView({ settings, trackedItems, currentKey, onSearch, onSettings, on
   settings: AppSettings;
   trackedItems: TrackedItem[];
   currentKey: string | null;
-  onSearch: (platformKey?: string, title?: string) => void;
+  onSearch: (platformKey?: string, title?: string, mediaType?: MediaType) => void;
   onSettings: () => void;
   onMigrate: (item: TrackedItem) => void;
   onUpdate: () => void;
 }) {
   const [syncing, setSyncing] = useState(false);
+  const [localQuery, setLocalQuery] = useState('');
+  const [displayLimit, setDisplayLimit] = useState(20);
+
   const hasAuth = settings.activeTrackers.length > 0 && Object.keys(settings.auth).length > 0;
-  const currentlyViewing = trackedItems.find(item => item.platformKey === currentKey);
-  const animeHistory = trackedItems.filter(item => item.type === 'anime' && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
-  const mangaHistory = trackedItems.filter(item => item.type !== 'anime' && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+
+  // 1. Efficient Filtering (Memoized)
+  const filteredItems = React.useMemo(() => {
+    if (!localQuery) return trackedItems;
+    const q = localQuery.toLowerCase();
+    return trackedItems.filter(i => i.platformTitle.toLowerCase().includes(q));
+  }, [trackedItems, localQuery]);
+
+  // 2. Intersection Observer for Infinite Scroll
+  const observerTarget = React.useRef(null);
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) setDisplayLimit(prev => prev + 20);
+      },
+      { threshold: 0.1 }
+    );
+    if (observerTarget.current) observer.observe(observerTarget.current);
+    return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+  }, []);
+
+  // Reset limit when query changes
+  useEffect(() => setDisplayLimit(20), [localQuery]);
+
+  const currentlyViewing = filteredItems.find(item => item.platformKey === currentKey);
+
+  const animeHistoryOfficial = filteredItems.filter(item => item.type === 'anime' && isOfficial(item.platform) && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+  const animeHistoryCommunity = filteredItems.filter(item => item.type === 'anime' && !isOfficial(item.platform) && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+
+  const mangaHistoryOfficial = filteredItems.filter(item => item.type !== 'anime' && isOfficial(item.platform) && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+  const mangaHistoryCommunity = filteredItems.filter(item => item.type !== 'anime' && !isOfficial(item.platform) && item !== currentlyViewing && Object.keys(item.trackerIds).length > 0);
+
+  // Helper to cap rendered items
+  let renderedCount = 0;
+  const shouldRender = () => {
+    if (renderedCount < displayLimit) {
+      renderedCount++;
+      return true;
+    }
+    return false;
+  };
 
   const handleManualSync = async () => {
     setSyncing(true);
@@ -590,46 +635,46 @@ function HomeView({ settings, trackedItems, currentKey, onSearch, onSettings, on
             <div style={{ flexShrink: 0 }}>
               <Badge label={statusInfo.label} color={statusInfo.color} />
             </div>
-          </div>
-          <div className="track-meta">
-            <Badge label={PLATFORM_LABELS[item.platform]} color="var(--text-muted)" />
-            <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>•</span>
-            <span style={{ color: 'var(--text-primary)', fontSize: 10, fontWeight: 700 }}>
-              {progressLabel}
-              {latestPending && latestPending > item.lastProgress && (
-                <span className="unsynced-info" style={{ color: 'var(--accent)', marginLeft: 6, opacity: 0.9 }}>
-                  → Ch.{latestPending} <span style={{ fontSize: 9, fontStyle: 'italic', fontWeight: 500 }}>(Unsynced)</span>
-                </span>
+            <div className="track-meta">
+              <Badge label={getPlatformLabel(item.platform)} color="var(--text-muted)" />
+              <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>•</span>
+              <span style={{ color: 'var(--text-primary)', fontSize: 10, fontWeight: 700 }}>
+                {progressLabel}
+                {latestPending && latestPending > item.lastProgress && (
+                  <span className="unsynced-info" style={{ color: 'var(--accent)', marginLeft: 6, opacity: 0.9 }}>
+                    → {item.type === 'anime' ? 'Ep.' : 'Ch.'}{latestPending} <span style={{ fontSize: 9, fontStyle: 'italic', fontWeight: 500 }}>(Unsynced)</span>
+                  </span>
+                )}
+              </span>
+              {mediaCondition && (
+                <>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>•</span>
+                  <span style={{ color: 'var(--text-muted)', fontSize: 10, textTransform: 'capitalize' }}>{mediaCondition}</span>
+                </>
               )}
-            </span>
-            {mediaCondition && (
-              <>
-                <span style={{ color: 'var(--text-muted)', fontSize: 10 }}>•</span>
-                <span style={{ color: 'var(--text-muted)', fontSize: 10, textTransform: 'capitalize' }}>{mediaCondition}</span>
-              </>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {!isUnlinked && latestPending && (
+              <button
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await msg({ type: 'SYNC_PROGRESS', payload: { platformKey: item.platformKey } });
+                  onUpdate();
+                }}
+                className="btn-icon"
+                title="Sync Now"
+                style={{ color: 'var(--accent)', borderColor: 'var(--accent-soft)', background: 'var(--accent-soft)' }}
+              >
+                ↑
+              </button>
+            )}
+            {isUnlinked ? (
+              <button onClick={() => onSearch(item.platformKey, item.platformTitle, item.type)} className="btn-accent" style={{ padding: '3px 8px', fontSize: 10 }}>Link</button>
+            ) : (
+              <button onClick={() => onMigrate(item)} className="btn-icon">⇄</button>
             )}
           </div>
-        </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          {!isUnlinked && latestPending && (
-            <button
-              onClick={async (e) => {
-                e.stopPropagation();
-                await msg({ type: 'SYNC_PROGRESS', payload: { platformKey: item.platformKey } });
-                onUpdate();
-              }}
-              className="btn-icon"
-              title="Sync Now"
-              style={{ color: 'var(--accent)', borderColor: 'var(--accent-soft)', background: 'var(--accent-soft)' }}
-            >
-              ↑
-            </button>
-          )}
-          {isUnlinked ? (
-            <button onClick={() => onSearch(item.platformKey, item.platformTitle)} className="btn-accent" style={{ padding: '3px 8px', fontSize: 10 }}>Link</button>
-          ) : (
-            <button onClick={() => onMigrate(item)} className="btn-icon">⇄</button>
-          )}
         </div>
       </div>
     );
@@ -669,10 +714,10 @@ function HomeView({ settings, trackedItems, currentKey, onSearch, onSettings, on
       <div className="scroll-area">
         {settings.batchSyncPending && (
           <PendingUpdatesBanner
-            items={trackedItems.filter(i => (i.pendingProgress?.length ?? 0) > 0)}
+            items={filteredItems.filter(i => (i.pendingProgress?.length ?? 0) > 0)}
             onSync={async () => {
               await Promise.all(
-                trackedItems
+                filteredItems
                   .filter(i => (i.pendingProgress?.length ?? 0) > 0)
                   .map(i => msg({ type: 'SYNC_PROGRESS', payload: { platformKey: i.platformKey } }))
               );
@@ -681,18 +726,36 @@ function HomeView({ settings, trackedItems, currentKey, onSearch, onSettings, on
           />
         )}
 
+        <div style={{ paddingBottom: 12 }}>
+          <input
+            className="full-bleed-search"
+            placeholder="Search history..."
+            value={localQuery}
+            onChange={e => setLocalQuery(e.target.value)}
+            style={{ fontSize: 13, padding: '8px 12px', background: 'var(--bg-surface)', border: '1px solid var(--border-subtle)', borderRadius: 8, width: '100%', boxSizing: 'border-box' }}
+          />
+        </div>
+
         {currentlyViewing && (
           <Section title="CURRENTLY VIEWING" isLive>
             {renderItem(currentlyViewing, true)}
           </Section>
         )}
 
-        {animeHistory.length > 0 && <Section title="ANIME">{animeHistory.map(item => renderItem(item))}</Section>}
-        {mangaHistory.length > 0 && <Section title="MANGA">{mangaHistory.map(item => renderItem(item))}</Section>}
+        {animeHistoryOfficial.length > 0 && <Section title="OFFICIAL ANIME">{animeHistoryOfficial.map(item => shouldRender() && renderItem(item))}</Section>}
+        {animeHistoryCommunity.length > 0 && <Section title="COMMUNITY ANIME">{animeHistoryCommunity.map(item => shouldRender() && renderItem(item))}</Section>}
 
-        {trackedItems.length === 0 && (
-          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>Visit a site to track.</div>
+        {mangaHistoryOfficial.length > 0 && <Section title="OFFICIAL MANGA">{mangaHistoryOfficial.map(item => shouldRender() && renderItem(item))}</Section>}
+        {mangaHistoryCommunity.length > 0 && <Section title="COMMUNITY MANGA">{mangaHistoryCommunity.map(item => shouldRender() && renderItem(item))}</Section>}
+
+        {filteredItems.length === 0 && (
+          <div style={{ padding: 40, textAlign: 'center', color: 'var(--text-muted)' }}>
+            {localQuery ? 'No results found.' : 'Visit a site to track.'}
+          </div>
         )}
+
+        {/* Infinite Scroll Sentinel */}
+        <div ref={observerTarget} style={{ height: 20, width: '100%' }} />
       </div>
 
       <div className="sticky-bottom">
@@ -709,7 +772,7 @@ function App() {
   const [settings, setSettings] = useState<AppSettings | null>(null);
   const [trackedItems, setTrackedItems] = useState<TrackedItem[]>([]);
   const [migrateTarget, setMigrateTarget] = useState<TrackedItem | null>(null);
-  const [searchCtx, setSearchCtx] = useState<{ platformKey: string | null, query: string | null } | null>(null);
+  const [searchCtx, setSearchCtx] = useState<{ platformKey: string | null, query: string | null, mediaType?: MediaType } | null>(null);
   const [currentlyViewingKey, setCurrentlyViewingKey] = useState<string | null>(null);
 
   const loadAll = useCallback(async () => {
@@ -731,7 +794,7 @@ function App() {
   if (!settings) return <div className="view-container"><Spinner /></div>;
   if (view === 'login') return <LoginView settings={settings} onBack={() => { setView('settings'); loadAll(); }} onAuthSuccess={loadAll} />;
   if (view === 'settings') return <SettingsView settings={settings} onBack={() => setView('home')} onOpenLogin={() => setView('login')} onUpdate={loadAll} />;
-  if (view === 'search') return <SearchView settings={settings} platformKey={searchCtx?.platformKey ?? null} initialQuery={searchCtx?.query ?? null} onBack={() => { setView('home'); loadAll(); }} />;
+  if (view === 'search') return <SearchView settings={settings} platformKey={searchCtx?.platformKey ?? null} initialQuery={searchCtx?.query ?? null} initialMediaType={searchCtx?.mediaType} onBack={() => { setView('home'); loadAll(); }} />;
   if (view === 'migrate' && migrateTarget) return <MigrateView item={migrateTarget} onBack={() => setView('home')} onDone={() => { setView('home'); loadAll(); }} />;
 
   return (
@@ -739,7 +802,7 @@ function App() {
       settings={settings}
       trackedItems={trackedItems}
       currentKey={currentlyViewingKey}
-      onSearch={(key, title) => { setSearchCtx({ platformKey: key || null, query: title || null }); setView('search'); }}
+      onSearch={(key, title, type) => { setSearchCtx({ platformKey: key || null, query: title || null, mediaType: type }); setView('search'); }}
       onSettings={() => setView('settings')}
       onMigrate={(item) => { setMigrateTarget(item); setView('migrate'); }}
       onUpdate={loadAll}
